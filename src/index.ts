@@ -1,11 +1,4 @@
-import { Context, Schema } from 'koishi'
+import database from '@koishijs/plugin-database-sqlite'
+import { Context } from 'koishi'
 
-export const name = 'newmarksgame'
-
-export interface Config {}
-
-export const Config: Schema<Config> = Schema.object({})
-
-export function apply(ctx: Context) {
-  // write your plugin here
-}
+const inject = ['database', 'context']

@@ -1,0 +1,4 @@
+plugins:
+  database-sqlite:
+    path: ./data.db
+  war-game: {} 
