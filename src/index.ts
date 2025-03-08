@@ -1,4 +1,4 @@
 import database from '@koishijs/plugin-database-sqlite'
 import { Context } from 'koishi'
 
-const inject = ['database', 'context']
+const inject = ['database', 'context'] //声明依赖
