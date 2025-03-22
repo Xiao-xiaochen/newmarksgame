@@ -1,35 +1,39 @@
-// 地区系统相关逻辑
+// src/core/region.ts
+import { Context } from 'koishi'
+import { RegionData } from '../models'
 
-export interface Region {
-  id: string;
-  name: string;
-  owner: string; // 控制方（国家 ID）
-  leader: string; // 领导人（玩家 ID）
-  population: number;
-  infrastructure: number; // 基础设施（建筑位）
-  maxInfrastructure: number;
-  warehouse: number; // 地区仓库容量
-  primaryIndustry: number; // 第一产业数量
-  secondaryIndustry: number; // 第二产业数量
-  garrison: number; // 地区驻军
-  terrainFeatures: TerrainFeatures; // 地形特质
-  resourceReserves: ResourceReserves; //资源储量
-}
+export class RegionSystem {
+  constructor(private ctx: Context) {}
 
-//地形特质
-export interface TerrainFeatures {
-    mountain: number;
-    hill: number;
-    plain: number;
-    river: number;
-    forest: number;
-}
+  // 获取或创建地区数据
+  async getRegion(channelId: string): Promise<RegionData> {
+    // 查询数据库
+    const [region] = await this.ctx.database.get('region', { channelId })
+    // 如果不存在则创建初始数据
+    if (!region) {
+      return await this.createDefaultRegion(channelId)
+    }
+    return region
+  }
 
-//资源储量
-export interface ResourceReserves {
-    rareEarth: number;
-    rareMetal: number;
-    ironOre: number;
-    coal: number;
-    crudeOil: number;
+  // 创建默认地区数据
+  private async createDefaultRegion(channelId: string): Promise<RegionData> {
+    const defaultData: RegionData = {
+      channelId,
+      controller: '未分配',
+      leader: '',
+      population: 30, // 默认30万人口
+      infrastructure: {
+        used: 30,
+        total: 86
+      },
+      storage: 14000,
+      primaryIndustry: 20,
+      secondaryIndustry: 10,
+      garrison: 3
+    }
+
+    await this.ctx.database.create('region', defaultData)
+    return defaultData
+  }
 }
