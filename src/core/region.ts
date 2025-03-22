@@ -1,6 +1,5 @@
-// 类型定义文件
+// 地区系统相关逻辑
 
-// 地区数据类型
 export interface Region {
   id: string;
   name: string;
@@ -33,18 +32,4 @@ export interface ResourceReserves {
     ironOre: number;
     coal: number;
     crudeOil: number;
-}
-
-// 玩家数据类型 (示例)
-export interface Player {
-  id: string;
-  name: string;
-  resources: any; // 玩家资源
-}
-
-// 国家数据类型 (示例)
-export interface Nation {
-    id: string;
-    name: string;
-    members: string[]; //成员
 }

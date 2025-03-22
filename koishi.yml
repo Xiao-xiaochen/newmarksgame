@@ -1,4 +1,8 @@
 plugins:
   database-sqlite:
     path: ./data.db
-  war-game: {} 
+    force_init: true # 添加 force_init: true 选项
+  newmarksgame: {}
+
+newmarksgame:
+  # 插件配置项，例如 debug 模式等
