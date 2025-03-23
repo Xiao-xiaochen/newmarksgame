@@ -1,7 +1,7 @@
 // src/core/Regioninfo.ts
 
 import { Context } from 'koishi'
-import { RegionSystem } from './core/region' //等待制作
+import { RegionSystem } from '../core/region' //等待制作
 
 export function defineCommands(ctx: Context) {
   const regionSystem = new RegionSystem(ctx)

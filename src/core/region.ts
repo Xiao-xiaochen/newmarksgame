@@ -7,9 +7,7 @@ export class RegionSystem {
 
   // 获取或创建地区数据
   async getRegion(channelId: string): Promise<RegionData> {
-    // 查询数据库
     const [region] = await this.ctx.database.get('region', { channelId })
-    // 如果不存在则创建初始数据
     if (!region) {
       return await this.createDefaultRegion(channelId)
     }
@@ -37,3 +35,4 @@ export class RegionSystem {
     return defaultData
   }
 }
+
