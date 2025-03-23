@@ -1,6 +1,7 @@
-// src/core/commands.ts
+// src/core/Regioninfo.ts
+
 import { Context } from 'koishi'
-import { RegionSystem } from './region'
+import { RegionSystem } from './core/region' //等待制作
 
 export function defineCommands(ctx: Context) {
   const regionSystem = new RegionSystem(ctx)
@@ -8,10 +9,9 @@ export function defineCommands(ctx: Context) {
   // 查看地区命令
   ctx.command('查看地区')
     .action(async ({ session }) => {
-      if (!session?.channelId) return '请在群聊中使用此命令'
-      
+      if (!session?.guildId) return '请在群聊中使用此命令'
       // 获取地区数据
-      const region = await regionSystem.getRegion(session.channelId)
+      const region = await regionSystem.getRegion(session.guildId)
       // 格式化消息
       return `
 =====[地区信息]=====
