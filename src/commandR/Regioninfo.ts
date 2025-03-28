@@ -1,10 +1,9 @@
-// src/core/Regioninfo.ts
+//src\commandR\Regioninfo.ts
 
 import { Context } from 'koishi'
-import { RegionSystem } from '../core/region' //等待制作
+//import { RegionSystem } from '../core/region'    等待制作
 
 export function Regioninfo(ctx: Context) {
-  const regionSystem = new RegionSystem(ctx)
   ctx.command('查看地区')
     .action((查看地区) => {
       return `
