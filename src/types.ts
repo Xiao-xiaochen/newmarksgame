@@ -1,5 +1,5 @@
-//  以下是koishi官方建议的类型定义
-// types.ts
+import 'koishi'
+
 export enum ChannelType {
   guild = 1,
   private = 2,
@@ -22,6 +22,9 @@ export interface User {
   id: string
   name: string
   avatar?: string
+  hasCheckedIn: boolean // 新增属性
+  population: number
+  infrastructure: number
 }
 
 export interface GuildMember {

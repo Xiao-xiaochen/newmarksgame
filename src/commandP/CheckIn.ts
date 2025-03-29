@@ -5,7 +5,13 @@ import { Context } from 'koishi'
 
 export function CheckIn(ctx: Context) {
   ctx.command('阅读报告')
-    .action((阅读报告) => {
+    .action(async ({ session }) => {
+      if (!session) {
+        return '会话不存在'
+      }
+      await ctx.database.setUser(session.platform, session.userId, {
+        hasCheckedIn: true
+      })
       return `
 ===[新马列文游]===
 用户名 ：未完成
