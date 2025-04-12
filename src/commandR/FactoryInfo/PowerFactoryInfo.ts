@@ -1,7 +1,7 @@
 //src\commandR\Power_Factory_Info.ts
 import { Context } from 'koishi'
 //import { Power_Factory_Info } from '../core/Player'    等待制作
-export function Playerinfo(ctx: Context) {
+export function PowerFactoryInfo(ctx: Context) {
   ctx.command('查看地区电厂')
     .action(async ({ session }) => {        //session是会话
       if (!session) {

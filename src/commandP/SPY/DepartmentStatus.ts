@@ -1,7 +1,8 @@
-//src\commandR\intelligence_department_status.ts
+//src\commandR\DepartmentStatus.ts
+
 import { Context } from 'koishi'
-//import { intelligence_department_status } from '../core/Player'    等待制作
-export function Playerinfo(ctx: Context) {
+
+export function DepartmentStatus(ctx: Context) {
   ctx.command('我的情报部')
     .action(async ({ session }) => {        //session是会话
       if (!session) {

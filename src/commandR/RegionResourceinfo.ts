@@ -1,5 +1,5 @@
 import { Context } from 'koishi'
-export function Playerinfo(ctx: Context) {
+export function RegionResourceinfo(ctx: Context) {
   ctx.command('勘探地区资源储量')
     .action(async ({ session }) => {
       if (!session) {

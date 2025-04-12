@@ -12,7 +12,7 @@ export function Playerinfo(ctx: Context) {
       const username = session?.author?.name || '未知用户'
       return `
 =====[全部资料]=====
-■用户名：${username}
+${username}
 □地区人口：30万
 □基础设施：30/50
 □第一产业数量：10

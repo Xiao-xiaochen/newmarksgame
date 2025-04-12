@@ -2,17 +2,18 @@
 
 import { Schema, Context } from "koishi";
 import { Regioninfo } from "./commandR/Regioninfo";
-import { CheckIn } from "./commandP/CheckIn";
+import { CheckIn } from "./commandP/CheckIn/TotalCheckIn";
 import { Playerinfo } from "./commandP/Playerinfo";
 import { Buildcountry } from "./commandP/Buildcountry";
 import { Terraininfo } from "./commandR/Terraininfo";
 import { Laborinfo } from "./commandR/Laborinfo";
 import { RegionPopulation } from "./commandR/RegionPopulation";
-import { RegionFactory } from "./commandR/RegionFactory";
+import { RegionFactory } from "./commandR/FactoryInfo/RegionFactory";
 import { RegionResourceinfo } from "./commandR/RegionResourceinfo";
-import { Power_Factory_Info } from "./commandR/Power_Factory_Info";
-import { Region_Metallurgy_Info } from "./commandR/RegionMetallurgyInfo";
-import { intelligence_department_status } from "./commandr/intelligence_department_status";
+import { PowerFactoryInfo } from "./commandR/FactoryInfo/PowerFactoryInfo";
+import { MetallurgyInfo } from "./commandR/FactoryInfo/MetallurgyInfo";
+import { DepartmentStatus } from "./commandP/SPY/DepartmentStatus";
+
 export const inject = {
   required: ['database']
 }
@@ -27,9 +28,9 @@ export function apply(ctx: Context) {
     RegionPopulation(ctx)
     RegionResourceinfo(ctx)
     RegionFactory(ctx)
-    Power_Factory_Info(ctx)
-    Region_Metallurgy_Info(ctx)
-    intelligence_department_status(ctx)
+    PowerFactoryInfo(ctx)
+    MetallurgyInfo(ctx)
+    DepartmentStatus(ctx)
 }
 
 
