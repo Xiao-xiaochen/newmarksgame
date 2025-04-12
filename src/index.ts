@@ -6,9 +6,9 @@ import { Buildcountry } from "./commandP/Buildcountry";
 import { Terraininfo } from "./commandR/Terraininfo";
 import { Laborinfo } from "./commandR/Laborinfo";
 import { RegionPopulation } from "./commandR/RegionPopulation";
-
+import { RegionResourceinfo } from "./commandR/RegionResourceinfo";
 export const inject = {
-  required: ['database'] 
+  required: ['database']
 }
 
 export function apply(ctx: Context) {
@@ -19,7 +19,8 @@ export function apply(ctx: Context) {
     Buildcountry(ctx)
     Laborinfo(ctx)
     RegionPopulation(ctx)
+    RegionResourceinfo(ctx)
 }
 
-  
+
 
