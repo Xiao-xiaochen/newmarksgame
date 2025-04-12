@@ -1,3 +1,5 @@
+//src\index.ts
+
 import { Schema, Context } from "koishi";
 import { Regioninfo } from "./commandR/Regioninfo";
 import { CheckIn } from "./commandP/CheckIn";
@@ -6,6 +8,7 @@ import { Buildcountry } from "./commandP/Buildcountry";
 import { Terraininfo } from "./commandR/Terraininfo";
 import { Laborinfo } from "./commandR/Laborinfo";
 import { RegionPopulation } from "./commandR/RegionPopulation";
+import { RegionFactory } from "./commandR/RegionFactory";
 import { RegionResourceinfo } from "./commandR/RegionResourceinfo";
 export const inject = {
   required: ['database']
@@ -20,6 +23,7 @@ export function apply(ctx: Context) {
     Laborinfo(ctx)
     RegionPopulation(ctx)
     RegionResourceinfo(ctx)
+    RegionFactory(ctx)
 }
 
 
