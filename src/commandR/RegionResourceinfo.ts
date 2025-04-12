@@ -1,6 +1,6 @@
 import { Context } from 'koishi'
 export function Playerinfo(ctx: Context) {
-  ctx.command('指令名')
+  ctx.command('勘探地区资源储量')
     .action(async ({ session }) => {
       if (!session) {
         return '会话不存在'
