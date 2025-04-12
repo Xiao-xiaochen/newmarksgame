@@ -1,5 +1,10 @@
 // src/commandR/RegionBuild.ts
 
+/**
+ * 这里的代码都是人机写的，我不知道写的对不对
+ */
+
+
 import { Context, Schema } from 'koishi'
 // import { RegionSystem } from '../core/region' // 等待制作
 // import { checkRegionRegistered, getRegionData, updateRegionData } from '../core/region' // 假设的函数

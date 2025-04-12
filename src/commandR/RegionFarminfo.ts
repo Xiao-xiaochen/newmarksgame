@@ -6,12 +6,14 @@ export function RegionFarminfo(ctx: Context) {
   ctx.command('查看地区第一产业')
   .action(async ( {session} ) => {
     const username = session?.author?.name || '未知用户'
+    const guildId = session?.guildId  || '未知频道'
     const userId = session?.userId
     if (!session) {
       return '会话不存在'
     }
       return `
 ===[地区第一产业信息]===
+地区：${guildId}
 ■农田：未完成
 ■固定劳动力：未完成
 ■空闲农田：未完成
