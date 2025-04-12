@@ -5,7 +5,12 @@ import { Context } from 'koishi'
 
 export function Regioninfo(ctx: Context) {
   ctx.command('查看地区')
-    .action((查看地区) => {
+  .action(async ( {session} ) => {
+    const username = session?.author?.name || '未知用户'
+    const userId = session?.userId
+    if (!session) {
+      return '会话不存在'
+    }
       return `
 =====[地区信息]=====
 ■控制方：未完成

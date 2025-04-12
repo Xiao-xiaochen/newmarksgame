@@ -5,7 +5,7 @@ import { Context, User } from 'koishi'
 
 export function Buildcountry(ctx: Context) {
   ctx.command('组建国家')
-    .action(( {session} ) => {
+    .action( async ( {session} ) => {
       const username = session?.author?.name || '未知用户'
       return `
 ======[国家]=====

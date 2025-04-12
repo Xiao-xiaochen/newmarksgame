@@ -1,25 +1,24 @@
+
 //src\commandR\Terraininfo.ts
 
 import { Context } from 'koishi'
 
 export function Terraininfo(ctx: Context) {
-  ctx.command('查看地区特质')
+  ctx.command('查看地区人口')
   .action(async ( {session} ) => {
     const username = session?.author?.name || '未知用户'
     const userId = session?.userId
     if (!session) {
       return '会话不存在'
     }
-      return `
-=====[地区特质]=====
-■建筑位：未完成
-■地形特质：
-□山地：未完成
-□丘陵：未完成
-□平原：未完成
-□河流：未完成
-□森林覆盖率：未完成
+      return `  
+===[地区人口]===
+■地区人口：67万
+■劳动人口：40万
+□人口变化：+1%/天
+■民生需求：
+□粮食: 67
+□生活消费品：34
 `.trim()
     })
-    
 }
