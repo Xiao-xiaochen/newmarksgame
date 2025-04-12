@@ -2,7 +2,7 @@
 
 import { Context } from 'koishi'
 
-export function Regioninfo(ctx: Context) {
+export function Laborinfo(ctx: Context) {
   ctx.command('查看地区劳动力')
   .action(async ( {session} ) => {
     const username = session?.author?.name || '未知用户'

@@ -1,9 +1,9 @@
 
-//src\commandR\Terraininfo.ts
+//src\commandR\RegionPopulation.ts
 
 import { Context } from 'koishi'
 
-export function Terraininfo(ctx: Context) {
+export function RegionPopulation(ctx: Context) {
   ctx.command('查看地区人口')
   .action(async ( {session} ) => {
     const username = session?.author?.name || '未知用户'

@@ -4,6 +4,8 @@ import { CheckIn } from "./commandP/CheckIn";
 import { Playerinfo } from "./commandP/Playerinfo";
 import { Buildcountry } from "./commandP/Buildcountry";
 import { Terraininfo } from "./commandR/Terraininfo";
+import { Laborinfo } from "./commandR/Laborinfo";
+import { RegionPopulation } from "./commandR/RegionPopulation";
 
 export const inject = {
   required: ['database'] 
@@ -15,6 +17,8 @@ export function apply(ctx: Context) {
     CheckIn(ctx)
     Playerinfo(ctx)
     Buildcountry(ctx)
+    Laborinfo(ctx)
+    RegionPopulation(ctx)
 }
 
   
