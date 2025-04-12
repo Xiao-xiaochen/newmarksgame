@@ -26,6 +26,3 @@ import { 功能名 } from "./commandP/功能名";
 export function apply(ctx: Context) {
     功能名(ctx)
 }
-//17
-//24
-///
