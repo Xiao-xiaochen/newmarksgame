@@ -1,3 +1,5 @@
+//src\index.ts
+
 import { Schema, Context } from "koishi";
 import { Regioninfo } from "./commandR/Regioninfo";
 import { CheckIn } from "./commandP/CheckIn";
