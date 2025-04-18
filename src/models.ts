@@ -9,6 +9,7 @@ declare module 'koishi' {
 
 export function Userinfo(ctx: Context) {
   ctx.database.extend('userdata', {
+    userId: 'string',                     // 用户id
     hasCheckedIn: 'boolean',            // 标记是否已阅读报告
     population: 'unsigned',               // 人口
     base: 'unsigned',                     // 基础设施
