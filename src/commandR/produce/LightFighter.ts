@@ -13,7 +13,6 @@ export function ProduceLightFighter(ctx: Context) {
 ${username} 同志：
 ■生产成功
 ■轻型战斗机+--
-■空闲劳动力：--万(- -万)
 ■消耗资源：（吨）
   □铝：--
   □稀有金属：--

@@ -1,8 +1,8 @@
-// src/commandP/HeavyFighter.ts
+// src/commandP/TacticalBomber.ts
 import { Context } from 'koishi'
 
-export function ProduceHeavyFighter(ctx: Context) {
-  ctx.command('地区生产 重型战斗机 <数量>')
+export function ProduceTacticalBomber(ctx: Context) {
+  ctx.command('地区生产 战术轰炸机 <数量>')
     .action(async ({ session }) => {
       if (!session) return '会话不存在'
       const username = session?.author?.name || '未知用户'
@@ -12,7 +12,7 @@ export function ProduceHeavyFighter(ctx: Context) {
 =====[军事工业]=====
 ${username} 同志：
 ■生产成功
-■重型战斗机+--
+■战术轰炸机+--
 ■消耗资源：（吨）
   □铝：--
   □稀有金属：--
