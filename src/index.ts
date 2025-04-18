@@ -19,7 +19,7 @@ import { ProduceTank } from "./commandR/produce/Tank";
 import {ProduceInfantryEquipment} from "./commandR/produce/InfantryEquipment";
 import {ProduceArtillery} from "./commandR/produce/Artillery";
 import {ProduceArmoredCar} from "./commandR/produce/ArmoredCar";
-
+import {ProduceAntiTankGun} from "./commandR/produce/AntiTankGun"
 export const inject = {
   required: ['database']
 }
@@ -47,6 +47,8 @@ export function apply(ctx: Context) {
     ProduceInfantryEquipment(ctx)
     ProduceArtillery(ctx)
     ProduceArmoredCar(ctx)
+    ProduceAntiTankGun(ctx)
+
   //CheckIn(ctx)
     CheckIn(ctx)
     PFarmCheckIn(ctx)

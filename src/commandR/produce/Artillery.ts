@@ -18,7 +18,7 @@ export function ProduceArtillery(ctx: Context) {
 ${username} 同志：
 ■生产成功
 ■防空炮+--
-■消耗资源：--（吨）
+■消耗资源：（吨）
   □钢铁：--
   □稀有金属：-
 `.trim()

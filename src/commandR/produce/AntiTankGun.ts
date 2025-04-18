@@ -1,10 +1,11 @@
-//src\commandP\InfantryEquipment.ts
+
+//src\commandP\AntiTankGun.ts
 
 import { Context } from 'koishi'
-//import { InfantryEquipment } from '../core/Player'    等待制作
+//import { AntiTankGun } from '../core/Player'    等待制作
 
-export function ProduceInfantryEquipment(ctx: Context) {
-  ctx.command('地区生产 步兵装备 <数量>')
+export function ProduceAntiTankGun(ctx: Context) {
+  ctx.command('地区生产 反坦克炮 <数量>')
     .action(async ({ session }) => {        //session是会话
       if (!session) {
         return '会话不存在'
@@ -16,10 +17,11 @@ export function ProduceInfantryEquipment(ctx: Context) {
 =====[军事工业]=====
 ${username} 同志：
 ■生产成功
-■步兵装备+--
-■空闲劳动力：--万(--万)
+■反坦克炮+-
+■空闲劳动力：--万(- -万)
 ■消耗资源：（吨）
-  □钢铁：--
+  □钢铁：---
+  □稀有资源：---
 `.trim()
     })
 }
