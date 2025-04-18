@@ -1,5 +1,6 @@
 {
   "name": "koishi-plugin-newmarksgame",
+<<<<<<< HEAD
   "description": "一个模块化，轻量化的硬核战争文游的开发版本",
   "version": "0.0138",
   "main": "lib/index.js",
@@ -7,16 +8,27 @@
   "files": [
     "lib",
     "dist"
+=======
+  "version": "0.0138",
+  "contributors": [
+    "ChuanYuanNotBoat",
+    "Xiao-xiaochen <xiaochen18217@gmail.com>"
+>>>>>>> 52e1c773a819deb217e0cebc2c7f58d77bd89c8a
   ],
   "license": "MIT",
-  "keywords": [
-    "chatbot",
-    "koishi",
-    "plugin"
-  ],
+  "homepage": "https://github.com/Xiao-xiaochen/newmarksgame",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Xiao-xiaochen/newmarksgame.git"
+  },
+  "keywords": ["文游"],
   "peerDependencies": {
     "koishi": "^4.18.7"
   }
+<<<<<<< HEAD
 }
 
 
+=======
+}
+>>>>>>> 52e1c773a819deb217e0cebc2c7f58d77bd89c8a
