@@ -22,13 +22,6 @@ export interface User {
   id: string
   name: string
   avatar?: string
-  hasCheckedIn: boolean // 标记是否已阅读报告/注册  z
-  population: number    // 初始人口
-  infrastructure: number // 初始基础设施
-  buildingDepartments: number // 初始建筑部门
-  lightFactories: number    // 初始轻工厂
-  farms: number             // 初始农田
-  food: number              // 初始粮食
 }
 
 export interface GuildMember {
@@ -52,6 +45,17 @@ export interface Message {
   content: string
   createdAt?: number
   updatedAt?: number
+}
+
+//以下是游戏的类型定义
+
+export interface userdata {
+  hasCheckedIn: boolean           // 标记是否已阅读报告
+  population: number              // 人口
+  base: number                    // 基础设施
+  Department: number              // 建筑部门
+  farms: number                   // 农田
+  food: number                    // 粮食
 }
 
 // 地区系统相关逻辑
