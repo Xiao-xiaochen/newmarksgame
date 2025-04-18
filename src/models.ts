@@ -7,14 +7,16 @@ declare module 'koishi' {
   }
 }
 
-export function Userinfo(ctx: Context) {
+export function initializeDatabase(ctx: Context) {
   ctx.database.extend('userdata', {
-    userId: 'string',                     // 用户id
-    hasCheckedIn: 'boolean',            // 标记是否已阅读报告
-    population: 'unsigned',               // 人口
-    base: 'unsigned',                     // 基础设施
-    Department: 'unsigned',               // 建筑部门
-    farms: 'unsigned',                    // 农田
-    food: 'unsigned',                    // 粮食
- }) 
+    userId: { type: 'string', length: 255 },
+    hasCheckedIn: { type: 'boolean', initial: false },
+    population: { type: 'unsigned', initial: 0 },
+    base: { type: 'unsigned', initial: 0 },
+    Department: { type: 'unsigned', initial: 0 }, // 建筑部门
+    farms: { type: 'unsigned', initial: 0 },      // 农田
+    food: { type: 'unsigned', initial: 0 },       // 粮食
+  }, {
+    primary: 'userId'  // 明确主键
+  })
 }

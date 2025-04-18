@@ -26,6 +26,7 @@ import { ProduceTacticalBomber } from './commandR/produce/TacticalBomber'
 import { ProduceStrategicBomber } from './commandR/produce/StrategicBomber'
 import { ProduceTransportAircraft } from './commandR/produce/TransportAircraft'
 import { ProduceAWACS } from './commandR/produce/AWACS'
+import { initializeDatabase } from "./models";
 
 export const inject = {
   required: ['database']
@@ -67,6 +68,8 @@ export function apply(ctx: Context) {
     CheckIn(ctx)
     PFarmCheckIn(ctx)
     RFarmCheckIn(ctx)
+
+    initializeDatabase(ctx)
 }
 
 
