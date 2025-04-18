@@ -13,7 +13,7 @@ import { RegionResourceinfo } from "./commandR/RegionResourceinfo";
 import { PowerFactoryInfo } from "./commandR/FactoryInfo/PowerFactoryInfo";
 import { MetallurgyInfo } from "./commandR/FactoryInfo/MetallurgyInfo";
 import { DepartmentStatus } from "./commandP/SPY/DepartmentStatus";
-
+import { ProduceTank } from "./commandR/produce/Tank";
 export const inject = {
   required: ['database']
 }
@@ -31,6 +31,7 @@ export function apply(ctx: Context) {
     PowerFactoryInfo(ctx)
     MetallurgyInfo(ctx)
     DepartmentStatus(ctx)
+    ProduceTank(ctx)
 }
 
 
