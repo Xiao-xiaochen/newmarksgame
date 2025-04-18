@@ -50,6 +50,7 @@ export interface Message {
 //以下是游戏的类型定义
 
 export interface userdata {
+  userId: number
   hasCheckedIn: boolean           // 标记是否已阅读报告
   population: number              // 人口
   base: number                    // 基础设施

@@ -10,6 +10,8 @@ export function CheckIn(ctx: Context) {
       if (!session) {
         return '会话不存在'
       }
+      try {
+        let Userinfo = await ctx.database.get('userdata', { userId })
           return `
 ===[新马列文游]===
 ${username}
