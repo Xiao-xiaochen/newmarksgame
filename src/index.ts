@@ -29,10 +29,17 @@ export function apply(ctx: Context) {
     Laborinfo(ctx)
     RegionPopulation(ctx)
     RegionResourceinfo(ctx)
+
+    //FactoryInfo
     RegionFactory(ctx)
     PowerFactoryInfo(ctx)
     MetallurgyInfo(ctx)
+
+    //SPY
     DepartmentStatus(ctx)
+
+    //CheckIn(ctx)
+    CheckIn(ctx)
     PFarmCheckIn(ctx)
     RFarmCheckIn(ctx)
 }
