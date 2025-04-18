@@ -12,6 +12,7 @@ export function CheckIn(ctx: Context) {
       }
       try {
         let Userinfo = await ctx.database.get('userdata', { userId })
+      }
           return `
 ===[新马列文游]===
 ${username}
