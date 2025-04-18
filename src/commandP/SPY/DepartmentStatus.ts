@@ -11,6 +11,7 @@ export function DepartmentStatus(ctx: Context) {
       const username = session?.author?.name || '未知用户'
       return `
 ====[情报机构]====
+${username}
 情报部：
 ■民政部：待组建
 ■陆军部：待组建

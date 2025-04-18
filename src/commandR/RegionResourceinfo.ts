@@ -8,6 +8,7 @@ export function RegionResourceinfo(ctx: Context) {
       const username = session?.author?.name || '未知用户'
       return `
 ===[地区资源储量]===
+地区：${username}
 资源单位：（吨）
 ■稀土资源：未完成
 ■稀有金属：未完成
