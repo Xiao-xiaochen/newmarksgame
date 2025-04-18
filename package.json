@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-newmarksgame",
   "description": "一个模块化，轻量化的硬核战争文游的开发版本",
-  "version": "0.0.1",
+  "version": "0.0138",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -18,3 +18,5 @@
     "koishi": "^4.18.7"
   }
 }
+
+
