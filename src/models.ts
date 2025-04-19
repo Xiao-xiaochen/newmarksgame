@@ -1,9 +1,11 @@
 import { Context } from 'koishi'
-import { userdata } from './types'
+import { Region, userdata, Country } from './types'
 
 declare module 'koishi' {
   interface Tables {
     userdata: userdata
+    regiondata: Region
+    country: Country
   }
 }
 
@@ -18,8 +20,31 @@ export function Database(ctx: Context) {
     Department: { type: 'unsigned', initial: 0 },
     farms: { type: 'unsigned', initial: 0 },
     food: { type: 'unsigned', initial: 0 }, 
+    countryName: { type: 'string', length: 255 },
+    isLeader: { type: 'boolean', initial: false },
   }, {
     primary: 'userId'  // 明确主键
   })
   
+  ctx.model.extend('regiondata', {
+    guildId: { type: 'string', length: 255 },
+    owner: { type: 'string', length: 255 },
+    leader: { type: 'string', length: 255 },
+    population: { type: 'unsigned', initial: 0 },
+    labor: { type: 'unsigned', initial: 0 },
+    base: { type: 'unsigned', initial: 0 },
+    Department: { type: 'unsigned', initial: 0 },
+    farms: { type: 'unsigned', initial: 0 },
+  }, {
+    primary: 'guildId'  // 明确主键
+  })
+
+  ctx.database.extend('country', {
+    name: { type: 'string', length: 255 },
+    leaderId: { type: 'string', length: 255 },
+    leaderName: { type: 'string', length: 255 },
+    members: { type: 'json' },
+  }, {
+    primary: 'name'
+  })
 }

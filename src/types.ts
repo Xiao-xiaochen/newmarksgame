@@ -58,20 +58,27 @@ export interface userdata {
   Department: number              // 建筑部门
   farms: number                   // 农田
   food: number                    // 粮食
+  countryName?: string
+  isLeader?: boolean
+}
+
+export interface Country {
+  name: string;
+  leaderId: string;
+  leaderName: string;
+  members: string[];
 }
 
 // 地区系统相关逻辑
 export interface Region {
-  id: string;
+  guildId: string;
   owner: string;                     // 控制方（国家 ID）
   leader: string;                    // 领导人（玩家 ID）
   population: number;                // 地区人口
-  infrastructure: number;            // 基础设施（建筑位）
-  maxInfrastructure: number;         // 最大基础设施
-  warehouse: number;                 // 地区仓库容量
-  primaryIndustry: number;           // 第一产业数量
-  secondaryIndustry: number;         // 第二产业数量
-  garrison: number;                  // 地区驻军数量
+  labor: number;                     // 劳动力
+  base: number;            // 基础设施（建筑位）
+  Department: number                 // 建筑部门
+  farms: number                      // 农田
 }
 
 //地形特质

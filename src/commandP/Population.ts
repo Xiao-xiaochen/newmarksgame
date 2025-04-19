@@ -1,7 +1,10 @@
- import { Context } from 'koishi'
 
-export function PFarmCheckIn(ctx: Context) {
-  ctx.command('阅读农业报告').alias('我的农业')
+//src\commandR\RegionPopulation.ts
+
+import { Context } from 'koishi'
+
+export function PPopulation(ctx: Context) {
+  ctx.command('我的人口')
     .action(async ( {session} ) => {
       if (!session) {
         return '会话不存在'
@@ -16,18 +19,22 @@ export function PFarmCheckIn(ctx: Context) {
         if (!Userinfo || Userinfo.length === 0) {
           return `
 ====[错误]====
-${username} 同志！
+${username} 同志
 您尚未注册！
 请先发送“阅读报告”
 `.trim()
           }
         const userdata = Userinfo[0]
+        const Formalpopulation = ( userdata.population / 10000 ).toFixed(2)
+        const Foodneed = ( userdata.population / 10000 ).toFixed(0)
         return `  
-===[农业报告]===
+====[人口]====
 ${username} 同志！
-■农田：${userdata.farms}
-□粮食产出：${ userdata.farms * 3 }
-□橡胶产出：0
+■人口：${Formalpopulation}万
+■劳动人口：${( userdata.Labor / 10000 ).toFixed(2)}万
+□人口变化：+1%/天
+■民生需求：
+□粮食: ${Foodneed}/天
 `.trim()
       } catch (error) {
         console.error('查询用户资料时出错:', error)
