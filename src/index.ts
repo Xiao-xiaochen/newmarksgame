@@ -4,7 +4,7 @@ import { Schema, Context } from "koishi";
 import { Regioninfo } from "./commandR/Regioninfo";
 import { CheckIn } from "./commandP/CheckIn/TotalCheckIn";
 import { Playerinfo } from "./commandP/Playerinfo";
-import { Buildcountry } from "./commandP/Buildcountry";
+import { Buildcountry } from "./commandC/Buildcountry";
 import { Terraininfo } from "./commandR/Terraininfo";
 import { Laborinfo } from "./commandR/Laborinfo";
 import { RegionPopulation } from "./commandR/RegionPopulation";
@@ -20,7 +20,7 @@ import {ProduceInfantryEquipment} from "./commandR/produce/InfantryEquipment";
 import {ProduceArtillery} from "./commandR/produce/Artillery";
 import {ProduceArmoredCar} from "./commandR/produce/ArmoredCar";
 import {ProduceAntiTankGun} from "./commandR/produce/AntiTankGun"
-import { initializeDatabase } from "./models";
+import { Database } from "./models";
 
 export const inject = {
   required: ['database']
@@ -51,12 +51,13 @@ export function apply(ctx: Context) {
     ProduceArmoredCar(ctx)
     ProduceAntiTankGun(ctx)
 
-  //CheckIn(ctx)
+    //CheckIn(ctx)
     CheckIn(ctx)
     PFarmCheckIn(ctx)
     RFarmCheckIn(ctx)
-
-    initializeDatabase(ctx)
+    
+    //数据库
+    Database(ctx)
 }
 
 

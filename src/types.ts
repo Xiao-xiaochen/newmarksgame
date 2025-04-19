@@ -53,6 +53,7 @@ export interface userdata {
   userId: string
   hasCheckedIn: boolean           // 标记是否已阅读报告
   population: number              // 人口
+  Labor: number                   // 劳动力
   base: number                    // 基础设施
   Department: number              // 建筑部门
   farms: number                   // 农田
