@@ -21,5 +21,5 @@ export function Database(ctx: Context) {
   }, {
     primary: 'userId'  // 明确主键
   })
-
+  
 }

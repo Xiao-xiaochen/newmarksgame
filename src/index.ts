@@ -21,6 +21,7 @@ import {ProduceArtillery} from "./commandR/produce/Artillery";
 import {ProduceArmoredCar} from "./commandR/produce/ArmoredCar";
 import {ProduceAntiTankGun} from "./commandR/produce/AntiTankGun"
 import { Database } from "./models";
+import { setupDailyReset } from "./core/CheckIn";
 
 export const inject = {
   required: ['database']
@@ -56,8 +57,9 @@ export function apply(ctx: Context) {
     PFarmCheckIn(ctx)
     RFarmCheckIn(ctx)
     
-    //数据库
+    //核心服务
     Database(ctx)
+    setupDailyReset(ctx)
 }
 
 
