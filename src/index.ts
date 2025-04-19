@@ -22,6 +22,8 @@ import {ProduceArmoredCar} from "./commandR/produce/ArmoredCar";
 import {ProduceAntiTankGun} from "./commandR/produce/AntiTankGun"
 import { Database } from "./models";
 import { setupDailyReset } from "./core/CheckIn";
+import { PPopulation } from "./commandP/Population";
+
 
 export const inject = {
   required: ['database']
@@ -36,6 +38,8 @@ export function apply(ctx: Context) {
     Laborinfo(ctx)
     RegionPopulation(ctx)
     RegionResourceinfo(ctx)
+    
+    PPopulation(ctx)
 
     //FactoryInfo
     RegionFactory(ctx)
@@ -47,9 +51,9 @@ export function apply(ctx: Context) {
 
     //produce
     ProduceTank(ctx)
-    ProduceInfantryEquipment(ctx)
-    ProduceArtillery(ctx)
-    ProduceArmoredCar(ctx)
+    ProduceInfantryEquipment(ctx)   
+    ProduceArtillery(ctx)   
+    ProduceArmoredCar(ctx)   
     ProduceAntiTankGun(ctx)
 
     //CheckIn(ctx)
