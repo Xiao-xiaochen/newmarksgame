@@ -34,7 +34,6 @@ export function CheckIn(ctx: Context) {
           }
 
           await ctx.database.create('userdata', Newuser)
-          
           return `
 ===[新马列文游]===
 欢迎游玩新马列文游
