@@ -4,7 +4,7 @@ import { Schema, Context } from "koishi";
 import { Regioninfo } from "./commandR/Regioninfo";
 import { CheckIn } from "./commandP/CheckIn/TotalCheckIn";
 import { Playerinfo } from "./commandP/Playerinfo";
-import { Buildcountry } from "./commandP/Buildcountry";
+import { Buildcountry } from "./commandC/Buildcountry";
 import { Terraininfo } from "./commandR/Terraininfo";
 import { Laborinfo } from "./commandR/Laborinfo";
 import { RegionPopulation } from "./commandR/RegionPopulation";
@@ -27,6 +27,8 @@ import { ProduceStrategicBomber } from './commandR/produce/StrategicBomber'
 import { ProduceTransportAircraft } from './commandR/produce/TransportAircraft'
 import { ProduceAWACS } from './commandR/produce/AWACS'
 import { initializeDatabase } from "./models";
+import { Database } from "./models";
+import { setupDailyReset } from "./core/CheckIn";
 
 export const inject = {
   required: ['database']
@@ -64,12 +66,14 @@ export function apply(ctx: Context) {
     ProduceAWACS(ctx)
 
 
-  //CheckIn(ctx)
+    //CheckIn(ctx)
     CheckIn(ctx)
     PFarmCheckIn(ctx)
     RFarmCheckIn(ctx)
 
-    initializeDatabase(ctx)
+    //核心服务
+    Database(ctx)
+    setupDailyReset(ctx)
 }
 
 
