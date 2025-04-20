@@ -11,7 +11,7 @@ declare module 'koishi' {
 
 export function Database(ctx: Context) {
 
-  ctx.database.extend('userdata', {
+  ctx.model.extend('userdata', {
     userId: { type: 'string', length: 255 },
     hasCheckedIn: { type: 'boolean', initial: false },
     population: { type: 'unsigned', initial: 0 },
@@ -35,14 +35,12 @@ export function Database(ctx: Context) {
     base: { type: 'unsigned', initial: 0 },
     Department: { type: 'unsigned', initial: 0 },
     farms: { type: 'unsigned', initial: 0 },
-    resources: { type: 'json' },
+    resources: 'json' 
   }, {
     primary: 'guildId'  // 明确主键
   })
 
-
-
-  ctx.database.extend('country', {
+  ctx.model.extend('country', {
     name: { type: 'string', length: 255 },
     leaderId: { type: 'string', length: 255 },
     leaderName: { type: 'string', length: 255 },

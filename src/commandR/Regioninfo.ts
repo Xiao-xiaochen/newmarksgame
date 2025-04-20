@@ -16,12 +16,21 @@ export function Regioninfo(ctx: Context) {
     }
     const guildId = session?.guildId  || '未知频道'
     const member = (await session.bot.getGuildMemberList(guildId)).data.length
+       const username = session.author?.name || '未知用户'
 
     try {
       let Regioninfo = await ctx.database.get('regiondata', { guildId: guildId })
 
+      const Userinfo = await ctx.database.get('userdata', { userId: userId })
+      if (!Userinfo || Userinfo.length === 0) {
+        return `
+====[错误]====
+${username} 同志！
+您尚未注册！
+请先发送“阅读报告”
+`
+      }
       if (!Regioninfo || Regioninfo.length === 0) {
-
         const userdata = await ctx.database.get('userdata', { userId: userId })
         const countryName = userdata[0].countryName || '无国家'
 
@@ -49,7 +58,7 @@ export function Regioninfo(ctx: Context) {
 地区：${guildId}
 ■控制方：${regiondata.owner}
 ■领导人：${regiondata.leader}
-□地区人口：${Formalpopulation}
+□地区人口：${Formalpopulation}万
 □基础设施：${regiondata.base}
 □地区仓库： 未完成
 □第一产业数量：${regiondata.farms}
