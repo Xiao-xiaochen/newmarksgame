@@ -16,6 +16,7 @@ import { DepartmentStatus } from "./commandP/SPY/DepartmentStatus";
 import { PFarmCheckIn } from "./commandP/CheckIn/FarmCheckIn";
 import { RFarmCheckIn } from "./commandR/CheckIn/FarmCheckIn";
 
+import {registerConstructionCommands} from "./commandR/Build/BuildPowerStation"
 import { ProduceTank } from "./commandR/produce/Tank";
 import { ProduceInfantryEquipment } from "./commandR/produce/InfantryEquipment";
 import { ProduceArtillery } from "./commandR/produce/Artillery";
@@ -46,7 +47,7 @@ export function apply(ctx: Context) {
     Laborinfo(ctx)
     RegionPopulation(ctx)
     RegionResourceinfo(ctx)
-    
+
     PPopulation(ctx)
 
     //FactoryInfo
@@ -59,9 +60,9 @@ export function apply(ctx: Context) {
 
     //produce
     ProduceTank(ctx)
-    ProduceInfantryEquipment(ctx)   
-    ProduceArtillery(ctx)   
-    ProduceArmoredCar(ctx)   
+    ProduceInfantryEquipment(ctx)
+    ProduceArtillery(ctx)
+    ProduceArmoredCar(ctx)
     ProduceAntiTankGun(ctx)
     ProduceLightFighter(ctx)
     ProduceHeavyFighter(ctx)
@@ -70,6 +71,8 @@ export function apply(ctx: Context) {
     ProduceTransportAircraft(ctx)
     ProduceAWACS(ctx)
 
+    //build
+    registerConstructionCommands(ctx)
 
     //CheckIn(ctx)
     CheckIn(ctx)
