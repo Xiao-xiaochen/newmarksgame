@@ -10,7 +10,7 @@ export function Terraininfo(ctx: Context) {
       }
       const guildId = session?.guildId || '未知频道'
       const username = session.author?.name || '未知用户'
-      
+      const format = ( num: number ) => num.toLocaleString();
       try {
         let Regioninfo = await ctx.database.get('regiondata', { guildId: guildId }) as Region[];
         if (!Regioninfo || Regioninfo.length === 0) {
@@ -51,24 +51,25 @@ ${username} 同志！
 ===[地区资源储量]===
 地区：${guildId}
 资源单位：（吨）
-■稀土资源：${ironOre.toLocaleString()}
-■稀有金属：${rareMetal.toLocaleString()}
-■铁矿：${ironOre.toLocaleString()}
-■煤矿：${coal.toLocaleString()}
-■铝矿：${aluminum.toLocaleString()}
-■原油：${oil.toLocaleString()}
+■稀土资源：${format(rareEarth)}
+■稀有金属：${format(rareMetal)}
+■铁矿：${format(ironOre)}
+■煤矿：${format(coal)}
+■铝矿：${format(aluminum)}
+■原油：${format(oil)}
 `.trim();
         }
+        const { rareEarth, rareMetal, ironOre, coal, aluminum, oil } = regiondata.resources;
         return `
 ===[地区资源储量]===
 地区：${guildId}
 资源单位：（吨）
-■稀土资源：${regiondata.resources.rareEarth.toLocaleString()}
-■稀有金属：${regiondata.resources.rareMetal.toLocaleString()}
-■铁矿：${regiondata.resources.ironOre.toLocaleString()}
-■煤矿：${regiondata.resources.coal.toLocaleString()}
-■铝矿：${regiondata.resources.aluminum.toLocaleString()}
-■原油：${regiondata.resources.oil.toLocaleString()}
+■稀土资源：${format(rareEarth)}
+■稀有金属：${format(rareMetal)}
+■铁矿：${format(ironOre)}
+■煤矿：${format(coal)}
+■铝矿：${format(aluminum)}
+■原油：${format(oil)}
 `.trim();
       } catch (error) {
         console.error('查询地区资源时出错:', error);
