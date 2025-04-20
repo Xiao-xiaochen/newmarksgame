@@ -14,8 +14,8 @@ export function RFarmCheckIn(ctx: Context) {
 ===[地区农业报告]===
 ${username}
 ■农田：未完成
-□粮食产出：未完成
-□橡胶产出：未完成
+  □粮食产出：未完成
+  □橡胶产出：未完成
 `.trim()
     }
   )

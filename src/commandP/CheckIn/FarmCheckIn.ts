@@ -22,12 +22,12 @@ ${username} 同志！
 `.trim()
           }
         const userdata = Userinfo[0]
-        return `  
+        return `
 ===[农业报告]===
 ${username} 同志！
 ■农田：${userdata.farms}
-□粮食产出：${ userdata.farms * 3 }
-□橡胶产出：0
+  □粮食产出：${ userdata.farms * 3 }
+  □橡胶产出：0
 `.trim()
       } catch (error) {
         console.error('查询用户资料时出错:', error)
