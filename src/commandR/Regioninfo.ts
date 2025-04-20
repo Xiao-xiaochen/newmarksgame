@@ -25,7 +25,7 @@ export function Regioninfo(ctx: Context) {
         const userdata = await ctx.database.get('userdata', { userId: userId })
         const countryName = userdata[0].countryName || '无国家'
 
-        const InitialPopulation = TRandom( ( member * 6000 ), ( member * 10000 ), ( member * 12000 )); 
+        const InitialPopulation = TRandom( ( member * 6000 ), ( member * 10000 ), ( member * 12000 ));
         const Labor = Math.floor( InitialPopulation * 0.6 );
         const base = Math.max( 1, Math.floor( member * 1.5  ));
         const InitialFarms = Math.max( 1, Math.floor( (InitialPopulation / 30000) * TRandom( 0.5, 0.7, 0.9, false ) ) );
@@ -55,7 +55,7 @@ export function Regioninfo(ctx: Context) {
 □第一产业数量：${regiondata.farms}
 □第二产业数量：${regiondata.Department}
 ■地区驻军：未完成
-`.trim()  
+`.trim()
     } catch (error) {
       console.error('数据库查询错误:', error)
       return '数据库查询错误'

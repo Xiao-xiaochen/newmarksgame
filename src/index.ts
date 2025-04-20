@@ -20,6 +20,13 @@ import {ProduceInfantryEquipment} from "./commandR/produce/InfantryEquipment";
 import {ProduceArtillery} from "./commandR/produce/Artillery";
 import {ProduceArmoredCar} from "./commandR/produce/ArmoredCar";
 import {ProduceAntiTankGun} from "./commandR/produce/AntiTankGun"
+import { ProduceLightFighter } from './commandR/produce/LightFighter'
+import { ProduceHeavyFighter } from './commandR/produce/HeavyFighter'
+import { ProduceTacticalBomber } from './commandR/produce/TacticalBomber'
+import { ProduceStrategicBomber } from './commandR/produce/StrategicBomber'
+import { ProduceTransportAircraft } from './commandR/produce/TransportAircraft'
+import { ProduceAWACS } from './commandR/produce/AWACS'
+import { initializeDatabase } from "./models";
 import { Database } from "./models";
 import { setupDailyReset } from "./core/CheckIn";
 import { PPopulation } from "./commandP/Population";
@@ -55,12 +62,19 @@ export function apply(ctx: Context) {
     ProduceArtillery(ctx)   
     ProduceArmoredCar(ctx)   
     ProduceAntiTankGun(ctx)
+    ProduceLightFighter(ctx)
+    ProduceHeavyFighter(ctx)
+    ProduceTacticalBomber(ctx)
+    ProduceStrategicBomber(ctx)
+    ProduceTransportAircraft(ctx)
+    ProduceAWACS(ctx)
+
 
     //CheckIn(ctx)
     CheckIn(ctx)
     PFarmCheckIn(ctx)
     RFarmCheckIn(ctx)
-    
+
     //核心服务
     Database(ctx)
     setupDailyReset(ctx)

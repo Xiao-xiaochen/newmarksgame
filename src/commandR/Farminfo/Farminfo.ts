@@ -18,8 +18,8 @@ export function RegionFarminfo(ctx: Context) {
 ■固定劳动力：未完成
 ■空闲农田：未完成
 ■作物类型：
-□橡胶作物：未完成
+  □橡胶作物：未完成
 `.trim()
     })
-    
+
 }
