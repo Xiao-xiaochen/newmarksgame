@@ -31,9 +31,8 @@ ${username} 同志！
           oil: TRandom(0, 100000, 60000),
           rareMetal: TRandom(0, 60000, 30000)
         };
-        
         // 如果地区存在但没有资源数据，更新地区数据
-        if (!regiondata.resources) {
+        if (!regiondata) {
           await ctx.database.set('regiondata', { guildId: guildId }, { resources });
         }
         

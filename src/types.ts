@@ -80,13 +80,13 @@ export interface Region {
   Department: number                 // 建筑部门
   farms: number                      // 农田
   resources?: {
-    ironOre: number
-    coal: number
-    aluminum: number
-    rareEarth: number
-    oil: number
-    rareMetal: number
-  }
+    ironOre: number;
+    coal: number;
+    aluminum: number;
+    rareEarth: number;
+    oil: number;
+    rareMetal: number;
+  };
 }
 
 //地形特质
@@ -98,11 +98,3 @@ export interface TerrainFeatures {
     forest: number;
 }
 
-//资源储量
-export interface ResourceReserves {
-    rareEarth: number;
-    rareMetal: number;
-    ironOre: number;
-    coal: number;
-    crudeOil: number;
-}

@@ -35,9 +35,12 @@ export function Database(ctx: Context) {
     base: { type: 'unsigned', initial: 0 },
     Department: { type: 'unsigned', initial: 0 },
     farms: { type: 'unsigned', initial: 0 },
+    resources: { type: 'json' },
   }, {
     primary: 'guildId'  // 明确主键
   })
+
+
 
   ctx.database.extend('country', {
     name: { type: 'string', length: 255 },
@@ -47,5 +50,5 @@ export function Database(ctx: Context) {
   }, {
     primary: 'name'
   })
-  
+
 }
