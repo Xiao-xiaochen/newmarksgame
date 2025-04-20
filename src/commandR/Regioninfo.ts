@@ -42,13 +42,14 @@ export function Regioninfo(ctx: Context) {
         }
         await ctx.database.create('regiondata', newregion)
       }
-      const regiondata = Regioninfo[0]
+      const regiondata = (await ctx.database.get('regiondata', { guildId: guildId }))[0]
+      const Formalpopulation = ( regiondata.population / 10000).toFixed(2)
       return `
 =====[地区信息]=====
 地区：${guildId}
 ■控制方：${regiondata.owner}
 ■领导人：${regiondata.leader}
-□地区人口：${regiondata.population}
+□地区人口：${Formalpopulation}
 □基础设施：${regiondata.base}
 □地区仓库： 未完成
 □第一产业数量：${regiondata.farms}

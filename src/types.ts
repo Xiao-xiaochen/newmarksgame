@@ -79,6 +79,14 @@ export interface Region {
   base: number;            // 基础设施（建筑位）
   Department: number                 // 建筑部门
   farms: number                      // 农田
+  resources?: {
+    ironOre: number
+    coal: number
+    aluminum: number
+    rareEarth: number
+    oil: number
+    rareMetal: number
+  }
 }
 
 //地形特质
