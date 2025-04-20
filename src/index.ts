@@ -15,18 +15,19 @@ import { MetallurgyInfo } from "./commandR/FactoryInfo/MetallurgyInfo";
 import { DepartmentStatus } from "./commandP/SPY/DepartmentStatus";
 import { PFarmCheckIn } from "./commandP/CheckIn/FarmCheckIn";
 import { RFarmCheckIn } from "./commandR/CheckIn/FarmCheckIn";
+
 import { ProduceTank } from "./commandR/produce/Tank";
-import {ProduceInfantryEquipment} from "./commandR/produce/InfantryEquipment";
-import {ProduceArtillery} from "./commandR/produce/Artillery";
-import {ProduceArmoredCar} from "./commandR/produce/ArmoredCar";
-import {ProduceAntiTankGun} from "./commandR/produce/AntiTankGun"
+import { ProduceInfantryEquipment } from "./commandR/produce/InfantryEquipment";
+import { ProduceArtillery } from "./commandR/produce/Artillery";
+import { ProduceArmoredCar } from "./commandR/produce/ArmoredCar";
+import { ProduceAntiTankGun } from "./commandR/produce/AntiTankGun"
 import { ProduceLightFighter } from './commandR/produce/LightFighter'
 import { ProduceHeavyFighter } from './commandR/produce/HeavyFighter'
 import { ProduceTacticalBomber } from './commandR/produce/TacticalBomber'
 import { ProduceStrategicBomber } from './commandR/produce/StrategicBomber'
 import { ProduceTransportAircraft } from './commandR/produce/TransportAircraft'
 import { ProduceAWACS } from './commandR/produce/AWACS'
-import { initializeDatabase } from "./models";
+
 import { Database } from "./models";
 import { setupDailyReset } from "./core/CheckIn";
 import { PPopulation } from "./commandP/Population";
