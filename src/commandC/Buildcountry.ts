@@ -78,7 +78,6 @@ ${username} 同志！
 组建成功！
 ■邀请格式：
 邀请加入国家@指定玩家
-//还没做邀请功能
 `.trim()
       } catch (error) {
         console.error('组建国家时出错:', error)

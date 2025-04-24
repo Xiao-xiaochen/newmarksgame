@@ -1,4 +1,3 @@
-
 {
   "name": "koishi-plugin-newmarksgame",
   "description": "一个模块化，轻量化的硬核战争文游的开发版本",
@@ -13,8 +12,13 @@
     "type": "git",
     "url": "git+https://github.com/Xiao-xiaochen/newmarksgame.git"
   },
-  "keywords": ["Game"],
+  "keywords": [
+    "Game"
+  ],
   "peerDependencies": {
     "koishi": "^4.17.2"
+  },
+  "dependencies": {
+    "simplex-noise": "^4.0.3"
   }
 }
