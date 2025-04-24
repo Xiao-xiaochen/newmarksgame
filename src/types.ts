@@ -76,16 +76,26 @@ export interface Region {
   leader: string;                    // 领导人（玩家 ID）
   population: number;                // 地区人口
   labor: number;                     // 劳动力
-  base: number;            // 基础设施（建筑位）
+  max_base: number;            // 基础设施（建筑位上限）
+  base:number;                 // 建筑位
   Department: number                 // 建筑部门
   farms: number                      // 农田
-  resources?: {
-    ironOre: number;
-    coal: number;
-    aluminum: number;
-    rareEarth: number;
-    oil: number;
-    rareMetal: number;
+  resources: {
+    minerals: {
+      ironOre: number;
+      coal: number;
+      aluminum: number;
+      rareEarth: number;
+      oil: number;
+      rareMetal: number;
+    };
+    terrain: {
+      mountain: number;
+      hill: number;
+      plain: number;
+      river: number;
+      forest: number;
+    };
   };
 }
 
@@ -97,6 +107,13 @@ export interface TerrainFeatures {
     river: number;
     forest: number;
 }
-
-
-
+//发电厂配置类型
+export interface PowerPlantConfig {
+  name: string
+  steelCost: number       //钢铁消耗 (吨/座)
+  laborCost: number       //劳动力需求 (人/座)
+  powerOutput: number     //发电量 (MW/座)
+  terrainCheck?: string   //地形要求(先放着）
+  coalCost?: number        //煤
+  UraniumCost?: number     //铀
+}
