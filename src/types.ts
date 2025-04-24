@@ -1,5 +1,9 @@
 import 'koishi'
 
+export interface System {
+  LastResetDate: string
+}
+
 export enum ChannelType {
   guild = 1,
   private = 2,

@@ -1,15 +1,19 @@
 import { Context } from 'koishi'
-import { Region, userdata, Country } from './types'
+import { Region, userdata, Country, System } from './types'
 
 declare module 'koishi' {
   interface Tables {
     userdata: userdata;
     regiondata: Region;
     country: Country;
+    system: System
   }
 }
 
 export function Database(ctx: Context) {
+  ctx.model.extend('system', {
+    LastResetDate: { type:'string', length: 255 },
+  })
 
   ctx.model.extend('userdata', {
     userId: { type: 'string', length: 255 },
