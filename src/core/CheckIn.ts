@@ -2,15 +2,14 @@ import { Context } from 'koishi'
 
 export function setupDailyReset(ctx: Context) {
   // 启动时检查是否需要重置
-  checkAndResetIfNeeded(ctx);
-  
+  CheckAndReset(ctx);
   // 每分钟检查一次是否需要重置
   ctx.setInterval(async () => {
-    await checkAndResetIfNeeded(ctx);
+    await CheckAndReset(ctx);
   }, 60 * 1000) // 每分钟检查一次
 }
 
-async function checkAndResetIfNeeded(ctx: Context) {
+async function CheckAndReset(ctx: Context) {
   try {
     const now = new Date();
     const today = now.toISOString().split('T')[0]; // 获取当前日期，格式为 YYYY-MM-DD
