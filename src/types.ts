@@ -1,5 +1,21 @@
 import 'koishi'
 
+// 地形类型枚举
+export enum TerrainType {
+  OCEAN = '水域',
+  PLAIN = '平原',
+  FOREST = '森林',
+  HILLS = '丘陵',
+  MOUNTAIN = '山地',
+}
+export interface TerrainTraits {
+  terrainType: TerrainType;
+  forestCoverage: number;
+  buildingSlots: number;
+  fertility: number;
+  resourceMultiplier: Record<string, number>;
+}
+
 export interface System {
   LastResetDate: string
 }

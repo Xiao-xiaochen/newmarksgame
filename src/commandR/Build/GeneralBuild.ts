@@ -1,7 +1,7 @@
-import { checkTerrain } from '../../commandP/terrain_check';
+
 import { POWER_PLANTS } from "../../core/Buiilding";           // 所有发电厂的配置，我的协作者，你要高内聚低耦合啊！
 import { Context } from "koishi";
-import { Region } from '../../types';
+
 
 export function GeneralBuild(ctx: Context) {
   ctx.command('地区建造 <type:string> <quantity:number>')

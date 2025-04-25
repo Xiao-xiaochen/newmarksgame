@@ -2,6 +2,7 @@
 
 import { Schema, Context } from "koishi";
 
+import { SetupTerrainGenerator } from "./commandR/Terrain";
 import { Database } from "./models";
 import { setupDailyReset } from "./core/CheckIn";
 
@@ -17,7 +18,7 @@ import { Playerinfo } from "./commandP/Playerinfo";
 import { Buildcountry } from "./commandC/Buildcountry";
 
 import { Laborinfo } from "./commandR/RegionInfo/Laborinfo";
-import { RegionPopulation } from "./commandR/RegionPopulation";
+import { RegionPopulation } from "./commandR/RegionInfo/RegionPopulation";
 import { DepartmentStatus } from "./commandP/SPY/DepartmentStatus";
 
 import { PFarmCheckIn } from "./commandP/CheckIn/FarmCheckIn";
@@ -39,10 +40,13 @@ import { PPopulation } from "./commandP/Population";
 
 
 export const inject = {
-  required: ['database']
+  required: ['database', 'puppeteer']
 }
 
 export function apply(ctx: Context) {
+
+    SetupTerrainGenerator(ctx)
+
     Regioninfo(ctx)
     CheckIn(ctx)
     Playerinfo(ctx)
