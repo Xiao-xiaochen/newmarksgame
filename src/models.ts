@@ -30,20 +30,6 @@ export function Database(ctx: Context) {
     primary: 'userId'  // 明确主键
   })
 
-  ctx.model.extend('regiondata', {
-    guildId: { type: 'string', length: 255 },
-    owner: { type: 'string', length: 255 },
-    leader: { type: 'string', length: 255 },
-    population: { type: 'unsigned', initial: 0 },
-    labor: { type: 'unsigned', initial: 0 },
-    base: { type: 'unsigned', initial: 0 },
-    Department: { type: 'unsigned', initial: 0 },
-    farms: { type: 'unsigned', initial: 0 },
-    resources: 'json' 
-  }, {
-    primary: 'guildId'  // 明确主键
-  })
-
   ctx.model.extend('country', {
     name: { type: 'string', length: 255 },
     leaderId: { type: 'string', length: 255 },
