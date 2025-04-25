@@ -11,8 +11,11 @@ declare module 'koishi' {
 }
 
 export function Database(ctx: Context) {
+  
   ctx.model.extend('system', {
     LastResetDate: { type:'string', length: 255 },
+  }, {
+    primary: 'LastResetDate'  // 明确主键
   })
 
   ctx.model.extend('userdata', {
