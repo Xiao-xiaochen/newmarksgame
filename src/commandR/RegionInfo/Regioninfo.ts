@@ -1,6 +1,6 @@
 import { Context } from 'koishi';
-import { TRandom } from '../utils/Random';
-import { Region } from '../types';
+import { TRandom } from '../../utils/Random';
+import { Region } from '../../types';
 
 export function Regioninfo(ctx: Context) {
   ctx.command('查看地区')
@@ -44,36 +44,34 @@ ${username} 同志！
           const InitialFarms = Math.max(
             1,
             Math.floor((InitialPopulation / 30000) * TRandom(0.5, 0.7, 0.9, false))
-          );
-
-          const newregion: Region = {
-            guildId: guildId,
-            owner: countryName,
-            leader: userId,
-            population: InitialPopulation,
-            labor: Labor,
-            base: base,
-            max_base: maxBase, // 添加 max_base 属性
-            Department: 0,
-            farms: InitialFarms,
-            resources: {
-              minerals: {
-                ironOre: TRandom(30000, 150000, 80000),
-                coal: TRandom(50000, 250000, 120000),
-                aluminum: TRandom(0, 100000, 30000),
-                rareEarth: TRandom(0, 30000, 15000),
-                oil: TRandom(0, 100000, 60000),
-                rareMetal: TRandom(0, 60000, 30000),
+            );
+  
+            const newregion: Region = {
+              guildId: guildId,
+              owner: countryName,
+              leader: userId,
+              population: InitialPopulation,
+              labor: Labor,
+              base: base,
+              max_base: maxBase, // 添加 max_base 属性
+              Department: 0,
+              farms: InitialFarms,
+              resources: {
+                rareMetal: 0,
+                rareEarth: 0,
+                coal: 0,
+                ironOre: 0,
+                aluminum: 0,
+                oil: 0
               },
               terrain: {
-                mountain: TRandom(1, 10, 5),
-                hill: TRandom(1, 10, 5),
-                plain: TRandom(1, 10, 5),
-                river: TRandom(1, 10, 5),
-                forest: TRandom(1, 10, 5),
-              },
-            },
-          };
+                mountain: 0,
+                hill: 0,
+                plain: 0,
+                river: 0,
+                forest: 0
+              }
+            };
 
           await ctx.database.create('regiondata', newregion);
         }
@@ -96,6 +94,6 @@ ${username} 同志！
       } catch (error) {
         console.error('数据库查询错误:', error);
         return '数据库查询错误';
-      }
+        }
     });
 }

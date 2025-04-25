@@ -1,22 +1,26 @@
 //src\index.ts
 
 import { Schema, Context } from "koishi";
-import { Regioninfo } from "./commandR/Regioninfo";
+
+import { Database } from "./models";
+import { setupDailyReset } from "./core/CheckIn";
+
+import { GeneralBuild } from "./commandR/Build/GeneralBuild"
+
+import { ResourceInfo } from "./commandR/RegionInfo/ResourceInfo";
+
+import { Regioninfo } from "./commandR/RegionInfo/Regioninfo";
 import { CheckIn } from "./commandP/CheckIn/TotalCheckIn";
 import { Playerinfo } from "./commandP/Playerinfo";
 import { Buildcountry } from "./commandC/Buildcountry";
-import { Terraininfo } from "./commandR/Terraininfo";
-import { Laborinfo } from "./commandR/Laborinfo";
+
+import { Laborinfo } from "./commandR/RegionInfo/Laborinfo";
 import { RegionPopulation } from "./commandR/RegionPopulation";
-import { RegionFactory } from "./commandR/FactoryInfo/RegionFactory";
-import { RegionResourceinfo } from "./commandR/RegionResourceinfo";
-import { PowerFactoryInfo } from "./commandR/FactoryInfo/PowerFactoryInfo";
-import { MetallurgyInfo } from "./commandR/FactoryInfo/MetallurgyInfo";
 import { DepartmentStatus } from "./commandP/SPY/DepartmentStatus";
+
 import { PFarmCheckIn } from "./commandP/CheckIn/FarmCheckIn";
 import { RFarmCheckIn } from "./commandR/CheckIn/FarmCheckIn";
 
-import {registerConstructionCommands} from "./commandR/Build/BuildPowerStation"
 import { ProduceTank } from "./commandR/produce/Tank";
 import { ProduceInfantryEquipment } from "./commandR/produce/InfantryEquipment";
 import { ProduceArtillery } from "./commandR/produce/Artillery";
@@ -29,8 +33,6 @@ import { ProduceStrategicBomber } from './commandR/produce/StrategicBomber'
 import { ProduceTransportAircraft } from './commandR/produce/TransportAircraft'
 import { ProduceAWACS } from './commandR/produce/AWACS'
 
-import { Database } from "./models";
-import { setupDailyReset } from "./core/CheckIn";
 import { PPopulation } from "./commandP/Population";
 
 
@@ -40,20 +42,16 @@ export const inject = {
 
 export function apply(ctx: Context) {
     Regioninfo(ctx)
-    Terraininfo(ctx)
+    ResourceInfo(ctx)
     CheckIn(ctx)
     Playerinfo(ctx)
     Buildcountry(ctx)
     Laborinfo(ctx)
     RegionPopulation(ctx)
-    RegionResourceinfo(ctx)
+
 
     PPopulation(ctx)
 
-    //FactoryInfo
-    RegionFactory(ctx)
-    PowerFactoryInfo(ctx)
-    MetallurgyInfo(ctx)
 
     //SPY
     DepartmentStatus(ctx)
@@ -72,7 +70,7 @@ export function apply(ctx: Context) {
     ProduceAWACS(ctx)
 
     //build
-    registerConstructionCommands(ctx)
+    GeneralBuild(ctx)
 
     //CheckIn(ctx)
     CheckIn(ctx)

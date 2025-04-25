@@ -32,9 +32,9 @@ ${username} 同志
 ${username} 同志！
 ■人口：${Formalpopulation}万
 ■劳动人口：${( userdata.Labor / 10000 ).toFixed(2)}万
-  □人口变化：+1%/天
+□人口变化：+1%/天
 ■民生需求：
-  □粮食: ${Foodneed}/天
+□粮食: ${Foodneed}/天
 `.trim()
       } catch (error) {
         console.error('查询用户资料时出错:', error)

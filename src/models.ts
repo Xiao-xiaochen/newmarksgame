@@ -11,7 +11,7 @@ declare module 'koishi' {
 }
 
 export function Database(ctx: Context) {
-  
+
   ctx.model.extend('system', {
     LastResetDate: { type:'string', length: 255 },
   }, {
@@ -51,27 +51,10 @@ export function Database(ctx: Context) {
     base: { type: 'unsigned', initial: 0 },
     Department: { type: 'unsigned', initial: 0 },
     farms: { type: 'unsigned', initial: 0 },
-    resources: {
-      type: 'json',
-      initial: {
-        minerals: {
-          ironOre: 0,
-          coal: 0,
-          aluminum: 0,
-          rareEarth: 0,
-          oil: 0,
-          rareMetal: 0,
-        },
-        terrain: {
-          mountain: 0,
-          hill: 0,
-          plain: 0,
-          river: 0,
-          forest: 0,
-        },
-      },
-    },
+    resources: 'json',
+    terrain: 'json',
   }, {
     primary: 'guildId', // 明确主键
   });
+  
 }
