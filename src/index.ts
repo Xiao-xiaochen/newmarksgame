@@ -7,6 +7,8 @@ import { setupDailyReset } from "./core/CheckIn";
 
 import { GeneralBuild } from "./commandR/Build/GeneralBuild"
 
+//RegionInfo
+import { ResourceCreate } from "./commandR/RegionInfo/ResourceCreate";
 import { ResourceInfo } from "./commandR/RegionInfo/ResourceInfo";
 
 import { Regioninfo } from "./commandR/RegionInfo/Regioninfo";
@@ -42,13 +44,15 @@ export const inject = {
 
 export function apply(ctx: Context) {
     Regioninfo(ctx)
-    ResourceInfo(ctx)
     CheckIn(ctx)
     Playerinfo(ctx)
     Buildcountry(ctx)
     Laborinfo(ctx)
     RegionPopulation(ctx)
 
+    //regioninfo
+    ResourceCreate(ctx)
+    ResourceInfo(ctx)
 
     PPopulation(ctx)
 
