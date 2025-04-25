@@ -49,6 +49,7 @@ export function Database(ctx: Context) {
     population: { type: 'unsigned', initial: 0 },
     labor: { type: 'unsigned', initial: 0 },
     base: { type: 'unsigned', initial: 0 },
+    maxbase: { type: 'unsigned', initial: 0 },
     Department: { type: 'unsigned', initial: 0 },
     farms: { type: 'unsigned', initial: 0 },
     resources: 'json',

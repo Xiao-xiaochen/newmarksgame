@@ -24,14 +24,14 @@ export function GeneralBuild(ctx: Context) {
     if (!region || region.length === 0) {
       return '地区数据不存在';
     }
-    const { base, max_base } = region[0]
+    const { base, maxbase } = region[0]
                 // 基础校验
     if (!Number.isInteger(quantity) || quantity <= 0) {
       return '数量必须为正整数';
     }
       // 建筑位校验
-    if (base < num) {
-      return `建筑位不足，当前可用：${base}/${max_base}`;
+    if ( maxbase < num ) {
+      return `建筑位不足，当前可用：${base}/${maxbase}`;
     }
         // 扣除建筑位
     await ctx.database.set( 'regiondata' , { guildId }, { base: base - num })
@@ -39,9 +39,11 @@ export function GeneralBuild(ctx: Context) {
 =====[土木工程]=====
 ${username} 同志：
 ■ 建造成功！
-□ 消耗资源：钢铁 × ${plantConfig.steelCost * num} 吨
+□ 消耗资源：
+钢铁 × ${plantConfig.steelCost * num} 吨
 □ 消耗建筑位：${num}
-□ 占用劳动力：${plantConfig.laborCost * num} 人
+□ 占用劳动力：
+${plantConfig.laborCost * num} 人
 `.trim();
   });
 }

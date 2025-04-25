@@ -39,8 +39,10 @@ ${username} 同志！
           // 初始化地区数据
           const InitialPopulation = TRandom(memberCount * 6000, memberCount * 10000, memberCount * 12000);
           const Labor = Math.floor(InitialPopulation * 0.6);
-          const base = Math.max(1, Math.floor(memberCount * 1.5));
-          const maxBase = Math.max(base * 2, 10); // 假设 max_base 是 base 的两倍，最小值为 10
+          
+          const base = 0
+
+          const maxBase = Math.max(1, Math.floor(memberCount * 1.5));
           const InitialFarms = Math.max(
             1,
             Math.floor((InitialPopulation / 30000) * TRandom(0.5, 0.7, 0.9, false))
@@ -53,7 +55,7 @@ ${username} 同志！
               population: InitialPopulation,
               labor: Labor,
               base: base,
-              max_base: maxBase, // 添加 max_base 属性
+              maxbase: maxBase, // 添加 max_base 属性
               Department: 0,
               farms: InitialFarms,
               resources: {
@@ -85,7 +87,7 @@ ${username} 同志！
 ■控制方：${regiondata.owner}
 ■领导人：${regiondata.leader}
 □地区人口：${FormalPopulation} 万
-□基础设施：${regiondata.base}/${regiondata.max_base}
+□基础设施：${regiondata.base}/${regiondata.maxbase}
 □地区仓库： 未完成
 □第一产业数量：${regiondata.farms}
 □第二产业数量：${regiondata.Department}

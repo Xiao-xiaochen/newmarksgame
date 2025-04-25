@@ -80,7 +80,7 @@ export interface Region {
   leader: string;                    // 领导人（玩家 ID）
   population: number;                // 地区人口
   labor: number;                     // 劳动力
-  max_base: number;            // 基础设施（建筑位上限）
+  maxbase: number;            // 基础设施（建筑位上限）
   base:number;                 // 建筑位
   Department: number                 // 建筑部门
   farms: number                      // 农
