@@ -25,7 +25,7 @@ async function CheckAndReset(ctx: Context) {
       
       // 更新上次重置日期
       if (systemData.length > 0) {
-        await ctx.database.set('system', { }, { LastResetDate: today });
+        await ctx.database.upsert('system', [{ LastResetDate: today }] );
       } else {
         await ctx.database.create('system', { LastResetDate: today });
       }
