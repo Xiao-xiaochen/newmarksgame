@@ -119,12 +119,7 @@ export class WorldMap {
     return this.regionManager.getTerrainTraits(regionId);
   }
   
-  /**
-   * 获取地区描述
-   */
-  public getRegionDescription(regionId: string): string {
-    return this.regionManager.GetRegionDescription(regionId);
-  }
+
   
   /**
    * 初始化地区数据

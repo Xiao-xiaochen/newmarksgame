@@ -9,13 +9,14 @@ import { WorldMapReset } from './core/Map/Command/WorldMapReset';
 import { GeneralBuild } from "./commandR/Build/GeneralBuild"
 
 //RegionInfo
-import { ResourceCreate } from "./commandR/RegionInfo/ResourceCreate";
+
 import { ResourceInfo } from "./commandR/RegionInfo/ResourceInfo";
 
 import { Regioninfo } from "./commandR/RegionInfo/Regioninfo";
 import { CheckIn } from "./commandP/CheckIn/TotalCheckIn";
 import { Playerinfo } from "./commandP/Playerinfo";
 import { Buildcountry } from "./commandC/Buildcountry";
+import { BindRegion } from './commandR/BindRegion';
 
 import { Laborinfo } from "./commandR/RegionInfo/Laborinfo";
 import { RegionPopulation } from "./commandR/RegionInfo/RegionPopulation";
@@ -40,6 +41,7 @@ import { PPopulation } from "./commandP/Population";
 import { TerrainInfo } from './commandR/RegionInfo/TerrainInfo';
 import { InitializeRegions } from './core/Map/Command/InitializeRegions';
 import { WorldMapInfo } from './core/Map/Command/WorldMap';
+import { WorldMapImport } from './core/Map/Command/WorldMapImport';
 
 
 export const inject = {
@@ -49,10 +51,12 @@ export const inject = {
 export function apply(ctx: Context) {
     
     WorldMapReset(ctx)
+    WorldMapImport(ctx)
     // 注册初始化地区命令
     InitializeRegions(ctx);
     WorldMapInfo(ctx)
-
+    
+    BindRegion(ctx)
     Regioninfo(ctx)
     CheckIn(ctx)
     Playerinfo(ctx)
@@ -61,7 +65,6 @@ export function apply(ctx: Context) {
     RegionPopulation(ctx)
 
     //regioninfo
-    ResourceCreate(ctx)
     ResourceInfo(ctx)
 
     PPopulation(ctx)

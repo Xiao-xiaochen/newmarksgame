@@ -183,51 +183,86 @@ export class RegionInitializer {
     for (const [regionId, terrainType] of regions.entries()) {
       stats[terrainType]++;
       
-      // 创建地区基本数据
+      let maxbase = 0;
+      let initialPopulation = 0;
+      const resources = { // 初始化资源对象
+        rareMetal: 0,
+        rareEarth: 0,
+        coal: 0,
+        ironOre: 0,
+        aluminum: 0,
+        oil: 0
+      };
+
+      // 根据地形类型设置 maxbase, initialPopulation 和 资源
+      switch (terrainType) {
+        case TerrainType.OCEAN:
+          maxbase = 0;
+          initialPopulation = 0; // 海洋无人居住
+          // 海洋资源可以后续添加，例如渔业资源等
+          break;
+        case TerrainType.MOUNTAIN:
+          maxbase = 20;
+          // 大幅提高山地人口：基础 5万，随机增加 0-5万
+          initialPopulation = Math.floor(50000 + Math.random() * 50000);
+          resources.rareMetal = Math.floor(Math.random() * 60000);
+          resources.rareEarth = Math.floor(Math.random() * 30000);
+          resources.ironOre = Math.floor(Math.random() * 150000) + 30000;
+          break;
+        case TerrainType.HILLS:
+          maxbase = 40;
+          // 大幅提高丘陵人口：基础 10万，随机增加 0-10万
+          initialPopulation = Math.floor(100000 + Math.random() * 100000);
+          resources.coal = Math.floor(Math.random() * 200000) + 50000;
+          resources.ironOre = Math.floor(Math.random() * 100000) + 20000;
+          break;
+        case TerrainType.FOREST:
+          maxbase = 60;
+          // 大幅提高森林人口：基础 15万，随机增加 0-15万
+          initialPopulation = Math.floor(150000 + Math.random() * 150000);
+          // 可以添加木材等森林特有资源
+          break;
+        case TerrainType.PLAIN:
+          maxbase = 80;
+          // 大幅提高平原人口：基础 20万，随机增加 0-30万 (平原人口最多)
+          initialPopulation = Math.floor(200000 + Math.random() * 300000);
+          resources.oil = Math.floor(Math.random() * 100000);
+          resources.aluminum = Math.floor(Math.random() * 80000) + 20000;
+          // 平原适合农业，可以考虑添加食物资源或加成
+          break;
+      }
+      
+      // 创建地区数据 (确保 Region 类型和数据库模型已更新)
       const regionData: Partial<Region> = {
         RegionId: regionId,
-        resources: {
-          rareMetal: 0,
-          rareEarth: 0,
-          coal: 0,
-          ironOre: 0,
-          aluminum: 0,
-          oil: 0
-        },
-        terrain: {
-          mountain: terrainType === TerrainType.MOUNTAIN ? 0.8 : (terrainType === TerrainType.HILLS ? 0.3 : 0.1),
-          hill: terrainType === TerrainType.HILLS ? 0.7 : (terrainType === TerrainType.MOUNTAIN ? 0.4 : 0.2),
-          plain: terrainType === TerrainType.PLAIN ? 0.8 : (terrainType === TerrainType.FOREST ? 0.4 : 0.2),
-          river: this.noise2D(parseInt(regionId.substring(0, 2)) * 0.1, parseInt(regionId.substring(2, 4)) * 0.1) * 0.5 + 0.5,
-          forest: terrainType === TerrainType.FOREST ? 0.8 : (terrainType === TerrainType.MOUNTAIN ? 0.1 : 0.3)
-        }
+        Terrain: terrainType, // 使用 Terrain 字段存储地形类型
+        maxbase: maxbase,             // 基础设施上限
+        population: initialPopulation, // 初始人口 (使用 population 字段存储)
+        resources: resources,         // 资源储量
+        // 移除旧的、分散的 terrain 对象
+        // terrain: { ... } // 移除此行
+        // 其他字段根据需要初始化，例如 owner, leader 等可以留空或设为默认值
+        owner: '',
+        leader: '',
+        labor: 0, // 初始劳动力可以设为0或基于人口计算
+        base: 0, // 初始基础设施为0
+        Department: 0,
+        farms: 0,
       };
-      
-      // 根据地形类型初始化资源
-      if (terrainType === TerrainType.MOUNTAIN) {
-        regionData.resources.rareMetal = Math.floor(Math.random() * 60000);
-        regionData.resources.rareEarth = Math.floor(Math.random() * 30000);
-        regionData.resources.ironOre = Math.floor(Math.random() * 150000) + 30000;
-      } else if (terrainType === TerrainType.HILLS) {
-        regionData.resources.coal = Math.floor(Math.random() * 200000) + 50000;
-        regionData.resources.ironOre = Math.floor(Math.random() * 100000) + 20000;
-      } else if (terrainType === TerrainType.PLAIN) {
-        regionData.resources.oil = Math.floor(Math.random() * 100000);
-        regionData.resources.aluminum = Math.floor(Math.random() * 80000) + 20000;
-      }
       
       batch.push(regionData);
       
       // 每500条数据批量插入一次
       if (batch.length >= 500) {
-        await ctx.database.upsert('regiondata', batch);
+        // 使用 upsert 确保数据可以被覆盖更新，如果需要的话
+        await ctx.database.upsert('regiondata', batch.map(data => ({ ...data, guildId: data.RegionId })), 'guildId');
         batch.length = 0;
       }
     }
     
     // 插入剩余数据
     if (batch.length > 0) {
-      await ctx.database.upsert('regiondata', batch);
+      await ctx.database.upsert('regiondata', batch.map(data => ({ ...data, guildId: data.RegionId })), 'guildId');
     }
     
     console.log('地区初始化完成，地形分布统计：', stats);

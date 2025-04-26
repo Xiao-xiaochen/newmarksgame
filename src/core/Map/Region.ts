@@ -94,22 +94,6 @@ export class RegionManager {
     };
   }
   
-  // 生成地区描述
-  public GetRegionDescription(regionId: string): string {
-    const traits = this.getTerrainTraits(regionId);
-    
-    return `
-=====[地区特质]=====
-□地区编号：${regionId}
-■建筑位：${traits.buildingSlots}
-■主要地形：${traits.terrainType}
-□森林覆盖率：${traits.forestCoverage}%
-□土地肥沃度：${Math.round(traits.fertility * 100)}%
-□海拔高度：${traits.elevation > 0 ? Math.round(traits.elevation * 1000) + 'm' : '海平面以下'}
-□湿度：${Math.round(traits.moisture * 100)}%
-□温度：${Math.round(traits.temperature * 40)}°C
-`.trim();
-  }
   
   // 初始化地区数据
   public initializeRegionData(regionId: string, guildId: string, owner: string, leader: string, population: number): RegionInterface {
@@ -155,13 +139,7 @@ export class RegionManager {
       Department: 0,
       farms: farms,
       resources: resources,
-      terrain: {
-        mountain: traits.terrainType === TerrainType.MOUNTAIN ? 0.8 : (traits.terrainType === TerrainType.HILLS ? 0.3 : 0.1),
-        hill: traits.terrainType === TerrainType.HILLS ? 0.7 : (traits.terrainType === TerrainType.MOUNTAIN ? 0.4 : 0.2),
-        plain: traits.terrainType === TerrainType.PLAIN ? 0.8 : (traits.terrainType === TerrainType.FOREST ? 0.4 : 0.2),
-        river: Math.max(0.1, Math.min(0.8, (traits.moisture + 0.5) / 2)),
-        forest: traits.forestCoverage / 100
-      }
+      Terrain: traits.terrainType,
     };
     
     return regionData;

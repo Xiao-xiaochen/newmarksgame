@@ -38,6 +38,7 @@ export function Database(ctx: Context) {
     leaderId: { type: 'string', length: 255 },
     leaderName: { type: 'string', length: 255 },
     members: { type: 'json' },
+    capitalRegionId: { type: 'string', length: 255, nullable: true }, // 新增：首都/初始地区ID
   }, {
     primary: 'name'
   })
@@ -45,6 +46,7 @@ export function Database(ctx: Context) {
   ctx.model.extend('regiondata', {
     RegionId: { type:'string', length: 255 },
     guildId: { type: 'string', length: 255 },
+    Terrain: { type: 'string', length: 255 },
     owner: { type: 'string', length: 255 },
     leader: { type: 'string', length: 255 },
     population: { type: 'unsigned', initial: 0 },
@@ -54,7 +56,6 @@ export function Database(ctx: Context) {
     Department: { type: 'unsigned', initial: 0 },
     farms: { type: 'unsigned', initial: 0 },
     resources: 'json',
-    terrain: 'json',
   }, {
     primary: 'RegionId', // 明确主键
   });

@@ -90,6 +90,7 @@ export interface Country {
   leaderId: string;
   leaderName: string;
   members: string[];
+  capitalRegionId: string;
 }
 
 // 地区系统相关逻辑
@@ -102,8 +103,8 @@ export interface Region {
   labor: number;                     // 劳动力
   maxbase: number;            // 基础设施（建筑位上限）
   base:number;                 // 建筑位
-  Department: number                 // 建筑部门
-  farms: number                      // 农
+  Department: number;                 // 建筑部门
+  farms: number;                      // 农
   resources: {
     rareMetal: number;
     rareEarth: number;
@@ -112,13 +113,8 @@ export interface Region {
     aluminum: number;
     oil: number;
   };
-  terrain: {
-    mountain: number;
-    hill: number;
-    plain: number;
-    river: number;
-    forest: number;
-  }
+  Terrain: TerrainType; // 将字段名改回 Terrain，类型使用 TerrainType 枚举
+  // 移除 dominantTerrain 字段（如果之前添加了的话）
 }
 
 //发电厂配置类型
