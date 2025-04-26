@@ -76,7 +76,7 @@ ${username} 同志！
         // --- 开始分配地区 ---
         let assignedRegionId: string | null = null;
         try {
-          const worldMap = WorldMap.getInstance();
+          // const worldMap = WorldMap.getInstance(); // 不再需要 worldMap 实例来获取地形
           // 1. 获取所有地区数据
           const allRegions = await ctx.database.get('regiondata', {});
           // 1.5 获取所有现有国家的首都位置
@@ -87,27 +87,41 @@ ${username} 同志！
 
           // 2. 筛选出合适的地区
           const suitableRegions = allRegions.filter(region => {
+            const regionId = region.RegionId; // 获取 RegionId 方便日志记录
+
             // 条件1：未被占领
-            if (region.owner) {
+            if (region.owner && region.owner !== '') { // 确保 owner 不为空字符串
+              // console.log(`[建国选址][${regionId}] 排除：已被占领 (${region.owner})`); // 可选日志
               return false;
             }
 
-            // 条件2：不是海洋
-            const terrainTraits = worldMap.getTerrainTraits(region.RegionId);
-            if (!terrainTraits || terrainTraits.terrainType === TerrainType.OCEAN) {
+            // 条件2：不是海洋 (使用数据库中的 Terrain 字段)
+            const terrainFromDb = region.Terrain; // 直接从数据库记录获取地形字符串
+            if (!terrainFromDb) {
+              console.warn(`[建国选址][${regionId}] 警告：数据库中缺少地形信息，按不合适处理。`);
               return false;
             }
+            // *** 修改日志并直接比较数据库字段 ***
+            // 确保与 TerrainType.OCEAN (值为 '水域') 进行比较
+            const isOcean = terrainFromDb === TerrainType.OCEAN;
+            console.log(`[建国选址][${regionId}] 地形检查(DB)：数据库类型='${terrainFromDb}', 是否为海洋(TerrainType.OCEAN='${TerrainType.OCEAN}')=${isOcean}`);
+            if (isOcean) {
+              // console.log(`[建国选址][${regionId}] 排除：是海洋 (来自数据库)`); // 可选日志
+              return false;
+            }
+
 
             // 条件3：距离所有现有首都至少3个地区远
             for (const capitalId of existingCapitals) {
-              const distance = calculateDistance(region.RegionId, capitalId);
-              if (distance < 3) { // 注意：距离小于3意味着距离为0, 1, 或 2
-                // console.log(`[建国选址] 地区 ${region.RegionId} 距离首都 ${capitalId} 太近 (${distance})，排除。`); // 可选的调试日志
-                return false; // 太近了，排除
+              const distance = calculateDistance(regionId, capitalId);
+              if (distance < 3) {
+                // console.log(`[建国选址][${regionId}] 排除：距离首都 ${capitalId} 太近 (${distance})`); // 可选日志
+                return false;
               }
             }
 
             // 如果通过所有检查，则该地区合适
+            console.log(`[建国选址][${regionId}] 通过所有检查，判定为合适。`); // 确认哪些地区被认为合适
             return true;
           });
 
@@ -163,8 +177,7 @@ ${username} 同志！
           successMessage += `\n□未能自动分配初始地区（可能是没有满足条件的位置），请联系管理员或稍后再试。`;
         }
         successMessage += `
-■邀请格式：
-邀请加入国家 @指定玩家
+\n■邀请格式：\n邀请加入国家 @指定玩家
 `.trim()
 
         return successMessage;
