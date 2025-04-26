@@ -43,6 +43,7 @@ export function Database(ctx: Context) {
   })
 
   ctx.model.extend('regiondata', {
+    RegionId: { type:'string', length: 255 },
     guildId: { type: 'string', length: 255 },
     owner: { type: 'string', length: 255 },
     leader: { type: 'string', length: 255 },
@@ -55,7 +56,7 @@ export function Database(ctx: Context) {
     resources: 'json',
     terrain: 'json',
   }, {
-    primary: 'guildId', // 明确主键
+    primary: 'RegionId', // 明确主键
   });
   
 }

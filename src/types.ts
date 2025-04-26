@@ -14,6 +14,9 @@ export interface TerrainTraits {
   buildingSlots: number;
   fertility: number;
   resourceMultiplier: Record<string, number>;
+  moisture?: number; // 添加湿度属性
+  elevation?: number; // 添加海拔属性
+  temperature?: number; // 添加温度属性
 }
 
 export interface System {
@@ -91,6 +94,7 @@ export interface Country {
 
 // 地区系统相关逻辑
 export interface Region {
+  RegionId: string;
   guildId: string;
   owner: string;                     // 控制方（国家 ID）
   leader: string;                    // 领导人（玩家 ID）

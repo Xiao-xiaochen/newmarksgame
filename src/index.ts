@@ -2,9 +2,9 @@
 
 import { Schema, Context } from "koishi";
 
-import { SetupTerrainGenerator } from "./commandR/Terrain";
 import { Database } from "./models";
 import { setupDailyReset } from "./core/CheckIn";
+import { WorldMapReset } from './core/Map/Command/WorldMapReset';
 
 import { GeneralBuild } from "./commandR/Build/GeneralBuild"
 
@@ -37,6 +37,9 @@ import { ProduceTransportAircraft } from './commandR/produce/TransportAircraft'
 import { ProduceAWACS } from './commandR/produce/AWACS'
 
 import { PPopulation } from "./commandP/Population";
+import { TerrainInfo } from './commandR/RegionInfo/TerrainInfo';
+import { InitializeRegions } from './core/Map/Command/InitializeRegions';
+import { WorldMapInfo } from './core/Map/Command/WorldMap';
 
 
 export const inject = {
@@ -44,8 +47,11 @@ export const inject = {
 }
 
 export function apply(ctx: Context) {
-
-    SetupTerrainGenerator(ctx)
+    
+    WorldMapReset(ctx)
+    // 注册初始化地区命令
+    InitializeRegions(ctx);
+    WorldMapInfo(ctx)
 
     Regioninfo(ctx)
     CheckIn(ctx)
@@ -88,6 +94,10 @@ export function apply(ctx: Context) {
     //核心服务
     Database(ctx)
     setupDailyReset(ctx)
+  
+    // 注册地区特质查询命令
+    TerrainInfo(ctx);
+
 }
 
 

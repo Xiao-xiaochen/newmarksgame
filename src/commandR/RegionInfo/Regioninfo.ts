@@ -46,36 +46,8 @@ ${username} 同志！
           const InitialFarms = Math.max(
             1,
             Math.floor((InitialPopulation / 30000) * TRandom(0.5, 0.7, 0.9, false))
-            );
-  
-            const newregion: Region = {
-              guildId: guildId,
-              owner: countryName,
-              leader: userId,
-              population: InitialPopulation,
-              labor: Labor,
-              base: base,
-              maxbase: maxBase, // 添加 max_base 属性
-              Department: 0,
-              farms: InitialFarms,
-              resources: {
-                rareMetal: 0,
-                rareEarth: 0,
-                coal: 0,
-                ironOre: 0,
-                aluminum: 0,
-                oil: 0
-              },
-              terrain: {
-                mountain: 0,
-                hill: 0,
-                plain: 0,
-                river: 0,
-                forest: 0
-              }
-            };
-
-          await ctx.database.create('regiondata', newregion);
+            )
+          //这个要改写
         }
 
         // 获取地区数据并返回信息
@@ -83,6 +55,7 @@ ${username} 同志！
         const FormalPopulation = (regiondata.population / 10000).toFixed(2);
         return `
 =====[地区信息]=====
+地区编号：${regiondata.RegionId}
 地区：${guildId}
 ■控制方：${regiondata.owner}
 ■领导人：${regiondata.leader}
