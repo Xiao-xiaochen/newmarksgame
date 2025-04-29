@@ -95,16 +95,38 @@ export interface Country {
 
 // 地区系统相关逻辑
 export interface Region {
+
   RegionId: string;
   guildId: string;
-  owner: string;                     // 控制方（国家 ID）
-  leader: string;                    // 领导人（玩家 ID）
-  population: number;                // 地区人口
-  labor: number;                     // 劳动力
-  maxbase: number;            // 基础设施（建筑位上限）
-  base:number;                 // 建筑位
-  Department: number;                 // 建筑部门
-  farms: number;                      // 农
+  owner: string;
+  leader: string;
+
+  population: number;
+  labor: number;
+  Busylabor: number;
+  Fixlabor: number;
+
+  base:number;
+  maxbase: number;
+
+  Department: number;
+  farms: number;
+  power: number;
+
+  warehouse: {
+    food: number;
+    goods: number;
+
+    rareMetal: number;
+    rareEarth: number;
+    coal: number;
+
+    ironOre: number;
+    steel: number;
+    aluminum: number;
+    oil: number;
+  }
+
   resources: {
     rareMetal: number;
     rareEarth: number;
@@ -113,8 +135,8 @@ export interface Region {
     aluminum: number;
     oil: number;
   };
-  Terrain: TerrainType; // 将字段名改回 Terrain，类型使用 TerrainType 枚举
-  // 移除 dominantTerrain 字段（如果之前添加了的话）
+
+  Terrain: TerrainType;
 }
 
 //发电厂配置类型
