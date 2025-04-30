@@ -1,106 +1,82 @@
-//src\index.ts
+// src\index.ts
 
-import { Schema, Context } from "koishi";
+import { Context } from "koishi";
 
+// --- 核心服务与配置 ---
 import { Database } from "./models";
-import { setupDailyReset } from "./core/CheckIn";
-import { WorldMapReset } from './core/Map/Command/WorldMapReset';
+import { setupDailyReset } from "./core/DayCheckIn"; // 注意：原为 CheckIn.ts，这里假设是 DayCheckIn.ts
+import { UserReset } from './core/UserReset';
+import { CountryReset } from './core/CountryReset'; // <--- 导入新命令
 
-import { GeneralBuild } from "./commandR/Build/GeneralBuild"
-
-//RegionInfo
-
-import { ResourceInfo } from "./commandR/RegionInfo/ResourceInfo";
-
-import { Regioninfo } from "./commandR/RegionInfo/Regioninfo";
-import { CheckIn } from "./commandP/CheckIn/TotalCheckIn";
-import { Playerinfo } from "./commandP/Playerinfo";
-import { Buildcountry } from "./commandC/Buildcountry";
-import { BindRegion } from './commandR/BindRegion';
-
-import { Laborinfo } from "./commandR/RegionInfo/Laborinfo";
-import { RegionPopulation } from "./commandR/RegionInfo/RegionPopulation";
-import { DepartmentStatus } from "./commandP/SPY/DepartmentStatus";
-
-import { PFarmCheckIn } from "./commandP/CheckIn/FarmCheckIn";
-import { RFarmCheckIn } from "./commandR/CheckIn/FarmCheckIn";
-
-import { ProduceTank } from "./commandR/produce/Tank";
-import { ProduceInfantryEquipment } from "./commandR/produce/InfantryEquipment";
-import { ProduceArtillery } from "./commandR/produce/Artillery";
-import { ProduceArmoredCar } from "./commandR/produce/ArmoredCar";
-import { ProduceAntiTankGun } from "./commandR/produce/AntiTankGun"
-import { ProduceLightFighter } from './commandR/produce/LightFighter'
-import { ProduceHeavyFighter } from './commandR/produce/HeavyFighter'
-import { ProduceTacticalBomber } from './commandR/produce/TacticalBomber'
-import { ProduceStrategicBomber } from './commandR/produce/StrategicBomber'
-import { ProduceTransportAircraft } from './commandR/produce/TransportAircraft'
-import { ProduceAWACS } from './commandR/produce/AWACS'
-
-import { PPopulation } from "./commandP/Population";
-import { TerrainInfo } from './commandR/RegionInfo/TerrainInfo';
+// --- 地图相关 ---
 import { InitializeRegions } from './core/Map/Command/InitializeRegions';
-import { WorldMapInfo } from './core/Map/Command/WorldMap';
 import { WorldMapImport } from './core/Map/Command/WorldMapImport';
+import { WorldMapInfo } from './core/Map/Command/WorldMap';
+import { WorldMapReset } from './core/Map/Command/WorldMapReset';
+import { BindRegion } from './commandR/BindRegion';
+import { TerrainInfo } from './commandR/RegionInfo/TerrainInfo';
 
+// --- 玩家相关 ---
+import { Playerinfo } from "./commandP/Playerinfo";
+import { CheckIn } from "./commandP/CheckIn/TotalCheckIn"; // 总签到
+import { PFarmCheckIn } from "./commandP/CheckIn/FarmCheckIn"; // 玩家农业签到
+import { PPopulation } from "./commandP/Population"; // 玩家人口相关？（命名可能需调整）
+import { DepartmentStatus } from "./commandP/SPY/DepartmentStatus"; // 间谍部门状态
+
+// --- 地区相关 ---
+import { Regioninfo } from "./commandR/RegionInfo/Regioninfo";
+import { ResourceInfo } from "./commandR/RegionInfo/ResourceInfo";
+import { Laborinfo } from "./commandR/RegionInfo/Laborinfo";
+import { RegionPopulation } from "./commandR/RegionInfo/RegionPopulation"; // 地区人口
+import { RFarmCheckIn } from "./commandR/CheckIn/FarmCheckIn"; // 地区农业签到
+import { GeneralBuild } from "./commandR/Build/GeneralBuild"; // 通用建造
+import { RegionProduce } from './commandR/Produce'; // 地区生产
+
+// --- 国家/势力相关 ---
+import { Buildcountry } from "./commandC/Buildcountry";
 
 export const inject = {
   required: ['database', 'puppeteer']
 }
 
 export function apply(ctx: Context) {
-    
-    WorldMapReset(ctx)
-    WorldMapImport(ctx)
-    // 注册初始化地区命令
-    InitializeRegions(ctx);
-    WorldMapInfo(ctx)
-    
-    BindRegion(ctx)
-    Regioninfo(ctx)
-    CheckIn(ctx)
-    Playerinfo(ctx)
-    Buildcountry(ctx)
-    Laborinfo(ctx)
-    RegionPopulation(ctx)
 
-    //regioninfo
-    ResourceInfo(ctx)
+    // --- 核心服务 ---
+    Database(ctx);
+    setupDailyReset(ctx); // 每日重置
+    UserReset(ctx);       // 用户数据重置
+    CountryReset(ctx);    // 国家数据重置 <--- 添加注册
 
-    PPopulation(ctx)
+    // --- 地图相关 ---
+    InitializeRegions(ctx); // 初始化地区
+    WorldMapImport(ctx);    // 导入地图
+    WorldMapInfo(ctx);      // 查看世界地图
+    WorldMapReset(ctx);     // 重置地图
+    BindRegion(ctx);        // 绑定地区
+    TerrainInfo(ctx);       // 查看地形
 
+    // --- 玩家相关 ---
+    Playerinfo(ctx);        // 玩家信息
+    CheckIn(ctx);           // 玩家总签到
+    PFarmCheckIn(ctx);      // 玩家农业签到
+    PPopulation(ctx);       // 玩家人口?
+    DepartmentStatus(ctx);  // 间谍部门状态
 
-    //SPY
-    DepartmentStatus(ctx)
+    // --- 地区相关 ---
+    Regioninfo(ctx);        // 地区信息
+    ResourceInfo(ctx);      // 地区资源信息
+    Laborinfo(ctx);         // 地区劳动力信息
+    RegionPopulation(ctx);  // 地区人口信息
+    RFarmCheckIn(ctx);      // 地区农业签到
+    GeneralBuild(ctx);      // 地区通用建造
+    RegionProduce(ctx);     // 地区生产
 
-    //produce
-    ProduceTank(ctx)
-    ProduceInfantryEquipment(ctx)
-    ProduceArtillery(ctx)
-    ProduceArmoredCar(ctx)
-    ProduceAntiTankGun(ctx)
-    ProduceLightFighter(ctx)
-    ProduceHeavyFighter(ctx)
-    ProduceTacticalBomber(ctx)
-    ProduceStrategicBomber(ctx)
-    ProduceTransportAircraft(ctx)
-    ProduceAWACS(ctx)
+    // --- 国家/势力相关 ---
+    Buildcountry(ctx);      // 建立国家
 
-    //build
-    GeneralBuild(ctx)
-
-    //CheckIn(ctx)
-    CheckIn(ctx)
-    PFarmCheckIn(ctx)
-    RFarmCheckIn(ctx)
-
-    //核心服务
-    Database(ctx)
-    setupDailyReset(ctx)
-  
-    // 注册地区特质查询命令
-    TerrainInfo(ctx);
-
+    // --- 移除或待整理的旧指令 (注释掉) ---
+    // ProduceTank(ctx)
+    // ProduceInfantryEquipment(ctx)
 }
 
 

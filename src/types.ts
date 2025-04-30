@@ -1,5 +1,9 @@
 import 'koishi'
 
+export interface System {
+  LastResetDate: string;
+}
+
 // 地形类型枚举
 export enum TerrainType {
   OCEAN = '水域',
@@ -19,61 +23,9 @@ export interface TerrainTraits {
   temperature?: number; // 添加温度属性
 }
 
-export interface System {
-  LastResetDate: string
-}
-
-export enum ChannelType {
-  guild = 1,
-  private = 2,
-  group = 3
-}
-
-export interface Channel {
-  id: string
-  name: string
-  type: ChannelType
-  parent_id?: string
-}
-
-export interface Guild {
-  id: string
-  name: string
-}
-
-export interface User {
-  id: string
-  name: string
-  avatar?: string
-}
-
-export interface GuildMember {
-  user: User
-  name?: string
-  avatar?: string
-  joinedAt?: number
-}
-
-export interface GuildRole {
-  id: string
-  name: string
-}
-
-export interface Message {
-  id: string
-  channel?: Channel
-  user?: User
-  member?: GuildMember  // 修正为 GuildMember
-  quote?: Message
-  content: string
-  createdAt?: number
-  updatedAt?: number
-}
-
-//以下是游戏的类型定义
-
 export interface userdata {
   userId: string
+  regionId: string
   hasCheckedIn: boolean           // 标记是否已阅读报告
   population: number              // 人口
   Labor: number                   // 劳动力
@@ -105,38 +57,89 @@ export interface Region {
   labor: number;
   Busylabor: number;
   Fixlabor: number;
+  power: number;
 
   base:number;
   maxbase: number;
 
-  Department: number;
+  Department: number;                //劳动力充足的建筑部门，每个小时自动产生建造力
+  Constructioncapacity: number;      //建造力
+  
   farms: number;
-  power: number;
+
+  mfactory: number;           //m表示军事
+  busymfactory: number;
+  
+  Mine: number;
+  busymine: number;
+  
+  oilwell: number;
+  busyoilwell: number;
+
+  steelmill: number;
+  busysteelmill: number;
 
   warehouse: {
+
     food: number;
     goods: number;
+    
+    rubber: number;
+    Mazout: number;
+    Diesel: number;
+    fuel: number;
+    Asphalt: number;
+    Gas: number;
 
     rareMetal: number;
     rareEarth: number;
     coal: number;
-
     ironOre: number;
     steel: number;
     aluminum: number;
     oil: number;
+
   }
 
+  militarywarehouse: {
+    bomb: number;
+    car: number;
+    Tank: number;
+    AntiTankGun: number;
+    Artillery: number;
+    AWACS: number;
+    HeavyFighter: number;
+    InfantryEquipment: number;
+    LightFighter: number;
+    StrategicBomber: number;
+    TacticalBomber: number;
+    Transportaircraft: number;
+  }
   resources: {
+
     rareMetal: number;
     rareEarth: number;
     coal: number;
     ironOre: number;
     aluminum: number;
     oil: number;
+
   };
 
   Terrain: TerrainType;
+}
+
+export interface MilitaryItemConfig {
+  name: string;                 // 物品名称
+  output: number;               // 单次生产产出数量
+  laborCost: number;            // 所需劳动力 (每个工厂)
+  resourceCosts: {              // 资源消耗 (单位：吨)
+    steel?: number;
+    rareMetal?: number;
+    aluminum?: number;
+    rubber?: number;
+  };
+  factoriesRequired: number;    // 生产一个单位所需的最少满编工厂数
 }
 
 //发电厂配置类型

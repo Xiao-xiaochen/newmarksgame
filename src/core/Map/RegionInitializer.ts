@@ -203,28 +203,24 @@ export class RegionInitializer {
           break;
         case TerrainType.MOUNTAIN:
           maxbase = 20;
-          // 大幅提高山地人口：基础 5万，随机增加 0-5万
-          initialPopulation = Math.floor(50000 + Math.random() * 50000);
+          initialPopulation = Math.floor(50000 + Math.random() * 50000); // 基础5万，随机0-5万
           resources.rareMetal = Math.floor(Math.random() * 60000);
           resources.rareEarth = Math.floor(Math.random() * 30000);
           resources.ironOre = Math.floor(Math.random() * 150000) + 30000;
           break;
         case TerrainType.HILLS:
           maxbase = 40;
-          // 大幅提高丘陵人口：基础 10万，随机增加 0-10万
-          initialPopulation = Math.floor(100000 + Math.random() * 100000);
+          initialPopulation = Math.floor(100000 + Math.random() * 100000); // 基础10万，随机0-10万
           resources.coal = Math.floor(Math.random() * 200000) + 50000;
           resources.ironOre = Math.floor(Math.random() * 100000) + 20000;
           break;
         case TerrainType.FOREST:
           maxbase = 60;
-          // 大幅提高森林人口：基础 15万，随机增加 0-15万
           initialPopulation = Math.floor(150000 + Math.random() * 150000);
           // 可以添加木材等森林特有资源
           break;
         case TerrainType.PLAIN:
           maxbase = 80;
-          // 大幅提高平原人口：基础 20万，随机增加 0-30万 (平原人口最多)
           initialPopulation = Math.floor(200000 + Math.random() * 300000);
           resources.oil = Math.floor(Math.random() * 100000);
           resources.aluminum = Math.floor(Math.random() * 80000) + 20000;

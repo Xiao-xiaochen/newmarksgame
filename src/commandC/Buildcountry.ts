@@ -30,7 +30,7 @@ export function Buildcountry(ctx: Context) {
       if (!userId) {
         return '无法获取用户ID'
       }
-      
+
       // 如果没有提供国家名称，提示用户
       if (!countryName) {
         return `
@@ -40,10 +40,35 @@ ${username} 同志！
 例如：组建国家 共和国
 `.trim()
       }
-      
+
+      // --- 新增：国家名称校验 ---
+      // 1. 长度校验 (例如 2-16 个字符)
+      if (countryName.length < 2 || countryName.length > 12) {
+        return `
+======[国家]=====
+${username} 同志！
+国家名称长度必须在 2 到 16 个字符之间。
+`.trim()
+      }
+      // 2. 字符校验 (只允许中文、英文、数字)
+      const validNameRegex = /^[\u4e00-\u9fa5a-zA-Z0-9]+$/;
+      if (!validNameRegex.test(countryName)) {
+        return `
+======[国家]=====
+${username} 同志！
+国家名称只能包含中文、英文字母和数字。
+`.trim()
+      }
+      // 3. 可选：黑名单校验 (如果需要，可以在这里添加)
+      // const forbiddenWords = ['敏感词1', '敏感词2'];
+      // if (forbiddenWords.some(word => countryName.includes(word))) {
+      //   return `国家名称包含不允许的词语。`;
+      // }
+      // --- 国家名称校验结束 ---
+
       try {
         // 检查用户是否已注册
-        const userInfo = await ctx.database.get('userdata', { userId: userId }) 
+        const userInfo = await ctx.database.get('userdata', { userId: userId })
         if (!userInfo || userInfo.length === 0) {
           return `
 ======[国家]=====
@@ -61,7 +86,7 @@ ${username} 同志！
 ${countryInfo[0].name}
 `.trim()
         }
-        
+
         // 检查国家名称是否已被使用
         const existingCountry = await ctx.database.get('country', { name: countryName })
         if (existingCountry && existingCountry.length > 0) {

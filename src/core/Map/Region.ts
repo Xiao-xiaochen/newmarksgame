@@ -1,5 +1,6 @@
 import { TerrainType, TerrainTraits, Region as RegionInterface } from '../../types';
 import { RegionInitializer } from './RegionInitializer';
+import { TRandom } from '../../utils/Random'; // 导入三角分布函数
 
 export class RegionManager {
   private regionInitializer: RegionInitializer;
@@ -98,12 +99,13 @@ export class RegionManager {
   // 初始化地区数据
   public initializeRegionData(regionId: string, guildId: string, owner: string, leader: string, population: number): RegionInterface {
     const traits = this.getTerrainTraits(regionId);
-    
-    const labor = Math.floor(population * 0.6);
-    const maxBase = traits.buildingSlots;
+
+    const labor = Math.floor(population * 0.6); // 劳动力计算保持不变
+    const maxBase = traits.buildingSlots; // 基础设施上限来自地形特征
+    // 农场计算保持不变 (或者可以根据需要调整)
     const farms = Math.max(1, Math.floor((population / 30000) * (traits.fertility * 0.7 + 0.3)));
-    
-    // 根据地形类型初始化资源
+
+    // 初始化资源对象，所有资源先设为0
     const resources = {
       rareMetal: 0,
       rareEarth: 0,
@@ -112,36 +114,99 @@ export class RegionManager {
       aluminum: 0,
       oil: 0
     };
-    
-    // 根据地形特性调整资源初始值
-    if (traits.terrainType === TerrainType.MOUNTAIN) {
-      resources.rareMetal = Math.floor(Math.random() * 60000);
-      resources.rareEarth = Math.floor(Math.random() * 30000);
-      resources.ironOre = Math.floor(Math.random() * 150000) + 30000;
-    } else if (traits.terrainType === TerrainType.HILLS) {
-      resources.coal = Math.floor(Math.random() * 200000) + 50000;
-      resources.ironOre = Math.floor(Math.random() * 100000) + 20000;
-    } else if (traits.terrainType === TerrainType.PLAIN) {
-      resources.oil = Math.floor(Math.random() * 100000);
-      resources.aluminum = Math.floor(Math.random() * 80000) + 20000;
+
+    // 根据地形类型，使用三角分布生成对应资源储量
+    // 注意：TRandom 返回的可能是小数，需要取整 Math.floor()
+    switch (traits.terrainType) {
+        case TerrainType.MOUNTAIN:
+            resources.rareMetal = Math.floor(TRandom(0, 30000, 60000)); // 稀有金属
+            resources.rareEarth = Math.floor(TRandom(0, 15000, 30000)); // 稀土
+            resources.ironOre = Math.floor(TRandom(30000, 80000, 150000)); // 铁矿
+            // 山地也可能少量产煤? (可选)
+            // resources.coal = Math.floor(TRandom(0, 10000, 50000));
+            break;
+        case TerrainType.HILLS:
+            resources.coal = Math.floor(TRandom(50000, 120000, 250000)); // 煤矿
+            resources.ironOre = Math.floor(TRandom(30000, 80000, 150000)); // 丘陵也产铁矿
+            // 丘陵也可能少量产铝? (可选)
+            // resources.aluminum = Math.floor(TRandom(0, 10000, 30000));
+            break;
+        case TerrainType.PLAIN:
+            resources.oil = Math.floor(TRandom(0, 60000, 100000)); // 原油
+            resources.aluminum = Math.floor(TRandom(0, 30000, 100000)); // 铝矿
+            // 平原也可能少量产煤? (可选)
+            // resources.coal = Math.floor(TRandom(0, 20000, 80000));
+            break;
+        case TerrainType.FOREST:
+            // 森林可以设定少量基础资源，或者专注于木材等（如果添加）
+            // resources.coal = Math.floor(TRandom(0, 5000, 20000));
+            break;
+        case TerrainType.OCEAN:
+            // 海洋目前不设定这些矿产资源
+            break;
     }
-    
+
+
     // 创建地区数据
     const regionData: RegionInterface = {
       RegionId: regionId,
       guildId: guildId,
       owner: owner,
       leader: leader,
-      population: population,
+      population: population, // 人口由调用者传入
       labor: labor,
       base: 0,
       maxbase: maxBase,
       Department: 0,
       farms: farms,
-      resources: resources,
+      resources: resources, // 使用新生成的资源对象
       Terrain: traits.terrainType,
+      Busylabor: 0,
+      Fixlabor: 0,
+      power: 0,
+
+      warehouse: {
+        food: 0,
+        goods: 0,
+        rareMetal: 0,
+        rareEarth: 0,
+        coal: 0,
+        ironOre: 0,
+        steel: 0,
+        aluminum: 0,
+        oil: 0,
+        rubber: 0,
+        Mazout: 0,
+        Diesel: 0,
+        fuel: 0,
+        Asphalt: 0,
+        Gas: 0
+      },
+      Constructioncapacity: 0,
+      mfactory: 0,
+      busymfactory: 0,
+      Mine: 0,
+      busymine: 0,
+      oilwell: 0,
+      busyoilwell: 0,
+      steelmill: 0,
+      busysteelmill: 0,
+      militarywarehouse: {
+        bomb: 0,
+        car: 0,
+        Tank: 0,
+        AntiTankGun: 0,
+        Artillery: 0,
+        AWACS: 0,
+        HeavyFighter: 0,
+        InfantryEquipment: 0,
+        LightFighter: 0,
+        StrategicBomber: 0,
+        TacticalBomber: 0,
+        Transportaircraft: 0
+      }
     };
-    
+
     return regionData;
   }
 }

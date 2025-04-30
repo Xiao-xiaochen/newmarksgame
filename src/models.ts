@@ -51,13 +51,27 @@ export function Database(ctx: Context) {
     leader: { type: 'string', length: 255 },
     population: { type: 'unsigned', initial: 0 },
     labor: { type: 'unsigned', initial: 0 },
+    Busylabor: { type: 'unsigned', initial: 0 }, // 新增
+    Fixlabor: { type: 'unsigned', initial: 0 }, // 新增
+    power: { type: 'unsigned', initial: 0 }, // 新增
     base: { type: 'unsigned', initial: 0 },
     maxbase: { type: 'unsigned', initial: 0 },
     Department: { type: 'unsigned', initial: 0 },
+    Constructioncapacity: { type: 'unsigned', initial: 0 }, // 新增
     farms: { type: 'unsigned', initial: 0 },
+    mfactory: { type: 'unsigned', initial: 0 }, // 新增
+    busymfactory: { type: 'unsigned', initial: 0 }, // 新增
+    Mine: { type: 'unsigned', initial: 0 }, // 新增
+    busymine: { type: 'unsigned', initial: 0 }, // 新增
+    oilwell: { type: 'unsigned', initial: 0 }, // 新增
+    busyoilwell: { type: 'unsigned', initial: 0 }, // 新增
+    steelmill: { type: 'unsigned', initial: 0 }, // 新增
+    busysteelmill: { type: 'unsigned', initial: 0 }, // 新增
+    warehouse: { type: 'json' }, // 新增
+    militarywarehouse: { type: 'json' }, // 新增
     resources: 'json',
   }, {
     primary: 'RegionId', // 明确主键
   });
-  
+
 }
