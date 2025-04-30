@@ -11,3 +11,5 @@ function calculateDistance(regionId1: string, regionId2: string): number {
   
     return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
   }
+
+  //切比雪夫
