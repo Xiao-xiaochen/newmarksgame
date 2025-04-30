@@ -26,3 +26,6 @@ import { 功能名 } from "./commandP/功能名";
 export function apply(ctx: Context) {
     功能名(ctx)
 }
+
+
+121312413254321·23142734671263

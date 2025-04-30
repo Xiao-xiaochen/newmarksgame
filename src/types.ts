@@ -152,3 +152,5 @@ export interface PowerPlantConfig {
   coalCost?: number        //煤
   UraniumCost?: number     //铀
 }
+
+//Wangyisheng
