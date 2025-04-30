@@ -1,5 +1,5 @@
 
-import { POWER_PLANTS } from "../../core/Buiilding";           // 所有发电厂的配置，我的协作者，你要高内聚低耦合啊！
+import { POWER_PLANTS } from "../core/Buiilding";           // 所有发电厂的配置，我的协作者，你要高内聚低耦合啊！
 import { Context } from "koishi";
 
 

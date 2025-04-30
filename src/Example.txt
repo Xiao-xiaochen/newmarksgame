@@ -27,5 +27,3 @@ export function apply(ctx: Context) {
     功能名(ctx)
 }
 
-
-121312413254321·23142734671263

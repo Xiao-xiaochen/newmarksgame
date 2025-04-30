@@ -3,7 +3,7 @@ import { Region } from '../../types';
 
 export function ResourceInfo(ctx: Context) {
   // 修改命令定义，接受可选参数 identifier
-  ctx.command('查看地区资源储量 [identifier:string]').alias('查看地区资源')
+  ctx.command('查看地区资源储量 [identifier:string]').alias('查看地区资源').alias('地区资源')
     .usage('查看指定地区或当前群聊绑定地区的资源储量。可以提供4位地区编号，或群号，或在已绑定地区的群聊中不带参数执行。')
     .example('查看地区资源 0101')
     .example('查看地区资源 123456789 (群号)')
@@ -84,8 +84,8 @@ ${username} 同志！
 
         // 格式化并返回资源信息
         return `
-===[地区资源储量 - ${regiondata.RegionId}]===
-地区：${regiondata.guildId || '未绑定群聊'}
+===[地区资源储量]===
+地区编号：${regiondata.guildId}
 资源单位：（吨）
 ■稀土资源：${format(regiondata.resources.rareEarth)}
 ■稀有金属：${format(regiondata.resources.rareMetal)}

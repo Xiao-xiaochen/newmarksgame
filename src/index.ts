@@ -23,17 +23,23 @@ import { PFarmCheckIn } from "./commandP/CheckIn/FarmCheckIn"; // 玩家农业�
 import { PPopulation } from "./commandP/Population"; // 玩家人口相关？（命名可能需调整）
 import { DepartmentStatus } from "./commandP/SPY/DepartmentStatus"; // 间谍部门状态
 
+
 // --- 地区相关 ---
 import { Regioninfo } from "./commandR/RegionInfo/Regioninfo";
 import { ResourceInfo } from "./commandR/RegionInfo/ResourceInfo";
 import { Laborinfo } from "./commandR/RegionInfo/Laborinfo";
 import { RegionPopulation } from "./commandR/RegionInfo/RegionPopulation"; // 地区人口
 import { RFarmCheckIn } from "./commandR/CheckIn/FarmCheckIn"; // 地区农业签到
-import { GeneralBuild } from "./commandR/Build/GeneralBuild"; // 通用建造
+import { GeneralBuild } from "./commandR/GeneralBuild"; // 通用建造
 import { RegionProduce } from './commandR/Produce'; // 地区生产
 
 // --- 国家/势力相关 ---
 import { Buildcountry } from "./commandC/Buildcountry";
+import { Mycountry } from "./commandP/Mycountry";
+import { Invite } from './commandC/Invite';
+import { MemberList } from './commandC/MemberList';
+import { RegionList } from './commandC/RegionList';
+import { Hiscountry } from './commandP/Hiscountry'; // <--- 导入他的国家指令
 
 export const inject = {
   required: ['database', 'puppeteer']
@@ -73,6 +79,11 @@ export function apply(ctx: Context) {
 
     // --- 国家/势力相关 ---
     Buildcountry(ctx);      // 建立国家
+    Mycountry(ctx);         // 我的国家
+    Invite(ctx);             // 邀请玩家加入国家
+    MemberList(ctx);         // 成员列表
+    RegionList(ctx);         // 地区列表
+    Hiscountry(ctx);         // 他的国家 <--- 注册他的国家指令
 
     // --- 移除或待整理的旧指令 (注释掉) ---
     // ProduceTank(ctx)

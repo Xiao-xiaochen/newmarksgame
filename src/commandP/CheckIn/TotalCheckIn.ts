@@ -26,15 +26,17 @@ export function CheckIn(ctx: Context) {
           const Labor = Math.floor( InitialPopulation * 0.6 );
           const InitialFarms = Math.max( 1, Math.floor( (InitialPopulation / 30000) * TRandom( 0.6, 0.8, 1, false ) ) );
           // 新用户数据
+
           const newuser: userdata = {
             userId: userId,
             hasCheckedIn: true,
             population: InitialPopulation,
-            Labor: Labor, 
+            Labor: Labor,
             base: 80,
-            Department: TRandom( 0, 3, 20 ),
+            Department: TRandom(0, 3, 20),
             farms: InitialFarms,
-            food: TRandom( 2, 10, 30 )
+            food: TRandom(2, 10, 30),
+            regionId: ''
           }
           await ctx.database.create('userdata', newuser)
 

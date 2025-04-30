@@ -20,6 +20,7 @@ export function Database(ctx: Context) {
 
   ctx.model.extend('userdata', {
     userId: { type: 'string', length: 255 },
+    regionId: { type: 'string', length: 255 },
     hasCheckedIn: { type: 'boolean', initial: false },
     population: { type: 'unsigned', initial: 0 },
     Labor: { type: 'unsigned', initial: 0 },
@@ -39,6 +40,7 @@ export function Database(ctx: Context) {
     leaderName: { type: 'string', length: 255 },
     members: { type: 'json' },
     capitalRegionId: { type: 'string', length: 255, nullable: true }, // 新增：首都/初始地区ID
+    regions: { type: 'json' }, // 新增：国家拥有的地区列表
   }, {
     primary: 'name'
   })

@@ -43,6 +43,7 @@ export interface Country {
   leaderName: string;
   members: string[];
   capitalRegionId: string;
+  regions: string[];
 }
 
 // 地区系统相关逻辑
@@ -83,7 +84,7 @@ export interface Region {
 
     food: number;
     goods: number;
-    
+
     rubber: number;
     Mazout: number;
     Diesel: number;

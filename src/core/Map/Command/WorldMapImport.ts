@@ -2,7 +2,7 @@ import { Context } from 'koishi'
 import * as fs from 'fs'
 import * as path from 'path'
 import { TerrainType, Region } from '../../../types' // 确保路径正确
-// 可能需要从 RegionInitializer 或 RegionManager 导入计算初始值的逻辑，或者在这里重新实现
+import { TRandom } from '../../../utils/Random'; // <--- 导入 TRandom
 
 // 地形名称到枚举的映射
 const terrainNameToEnum: Record<string, TerrainType> = {
@@ -13,40 +13,51 @@ const terrainNameToEnum: Record<string, TerrainType> = {
   '山地': TerrainType.MOUNTAIN,
 };
 
-// 计算初始值的辅助函数 (可以从 RegionInitializer 或 Region 提取/复用)
-function calculateInitialValues(terrainType: TerrainType): { maxbase: number, initialPopulation: number, resources: Region['resources'] } {
+// 计算初始值的辅助函数 (只计算 maxbase 和 population)
+function calculateBaseValues(terrainType: TerrainType): { maxbase: number, initialPopulation: number } {
   let maxbase = 0;
   let initialPopulation = 0;
-  const resources: Region['resources'] = {
-    rareMetal: 0, rareEarth: 0, coal: 0, ironOre: 0, aluminum: 0, oil: 0
-  };
 
   switch (terrainType) {
     case TerrainType.OCEAN:
       maxbase = 0; initialPopulation = 0;
       break;
     case TerrainType.MOUNTAIN:
-      maxbase = 20; initialPopulation = Math.floor(50 + Math.random() * 50);
-      resources.rareMetal = Math.floor(Math.random() * 60000);
-      resources.rareEarth = Math.floor(Math.random() * 30000);
-      resources.ironOre = Math.floor(Math.random() * 150000) + 30000;
+      // 人口基数调回万单位，之前可能是笔误写成了个位数
+      maxbase = 20; initialPopulation = Math.floor(50000 + Math.random() * 50000);
       break;
     case TerrainType.HILLS:
-      maxbase = 40; initialPopulation = Math.floor(100 + Math.random() * 100);
-      resources.coal = Math.floor(Math.random() * 200000) + 50000;
-      resources.ironOre = Math.floor(Math.random() * 100000) + 20000;
+      maxbase = 40; initialPopulation = Math.floor(100000 + Math.random() * 100000);
       break;
     case TerrainType.FOREST:
-      maxbase = 60; initialPopulation = Math.floor(150 + Math.random() * 150);
+      maxbase = 60; initialPopulation = Math.floor(150000 + Math.random() * 150000);
       break;
     case TerrainType.PLAIN:
-      maxbase = 80; initialPopulation = Math.floor(200 + Math.random() * 200);
-      resources.oil = Math.floor(Math.random() * 100000);
-      resources.aluminum = Math.floor(Math.random() * 80000) + 20000;
+      maxbase = 80; initialPopulation = Math.floor(200000 + Math.random() * 300000);
       break;
   }
-  return { maxbase, initialPopulation, resources };
+  // 只返回基础建设和人口
+  return { maxbase, initialPopulation };
 }
+
+// 定义资源的基础范围和模式 (min, max, mode) for TRandom (单位：吨)
+const resourceParams = {
+    coal:      { min: 50000, max: 250000, mode: 120000 }, // 煤矿
+    ironOre:   { min: 30000, max: 150000, mode: 80000 },  // 铁矿
+    oil:       { min: 0,     max: 100000, mode: 60000 },  // 原油
+    rareMetal: { min: 0,     max: 60000,  mode: 30000 },  // 稀有金属
+    rareEarth: { min: 0,     max: 30000,  mode: 15000 },  // 稀土
+    aluminum:  { min: 0,     max: 100000, mode: 30000 },  // 铝矿
+};
+
+// 定义地形对资源储量的修正系数 (乘数)
+const terrainResourceModifiers: Record<TerrainType, Record<keyof typeof resourceParams, number>> = {
+    [TerrainType.OCEAN]:    { coal: 0, ironOre: 0, oil: 0.5, rareMetal: 0, rareEarth: 0, aluminum: 0 }, // 海洋可能有少量石油
+    [TerrainType.PLAIN]:    { coal: 0.5, ironOre: 0.5, oil: 1.5, rareMetal: 0.3, rareEarth: 0.2, aluminum: 1.2 }, // 平原石油、铝较多
+    [TerrainType.FOREST]:   { coal: 0.8, ironOre: 0.6, oil: 0.8, rareMetal: 0.5, rareEarth: 0.4, aluminum: 0.7 }, // 森林资源较均衡
+    [TerrainType.HILLS]:    { coal: 1.8, ironOre: 1.5, oil: 0.4, rareMetal: 0.8, rareEarth: 0.7, aluminum: 0.5 }, // 丘陵煤、铁较多
+    [TerrainType.MOUNTAIN]: { coal: 1.2, ironOre: 2.0, oil: 0.1, rareMetal: 2.5, rareEarth: 2.0, aluminum: 0.3 }, // 山地铁、稀有资源多
+};
 
 
 export function WorldMapImport(ctx: Context) {
@@ -83,7 +94,6 @@ export function WorldMapImport(ctx: Context) {
         }
         regionIdsFound.add(regionId);
 
-
         const terrainType = terrainNameToEnum[terrainName];
 
         if (terrainType === undefined) {
@@ -91,23 +101,52 @@ export function WorldMapImport(ctx: Context) {
           continue; // 跳过无法识别的地形
         }
 
-        const { maxbase, initialPopulation, resources } = calculateInitialValues(terrainType);
+        // 1. 计算基础建设和人口
+        const { maxbase, initialPopulation } = calculateBaseValues(terrainType);
+
+        // 2. 计算资源储量
+        const resources: Region['resources'] = {
+          coal: 0, ironOre: 0, oil: 0, rareMetal: 0, rareEarth: 0, aluminum: 0
+        };
+
+        // 如果不是海洋，则计算资源
+        if (terrainType !== TerrainType.OCEAN) {
+            const modifiers = terrainResourceModifiers[terrainType];
+            for (const resKey in resourceParams) {
+                const key = resKey as keyof typeof resourceParams;
+                const params = resourceParams[key];
+                const modifier = modifiers[key];
+
+                // 使用 TRandom 生成基础值，偏向低储量
+                const baseAmount = TRandom(params.min, params.max, params.mode);
+                // 应用地形修正系数，并确保结果非负
+                resources[key] = Math.max(0, Math.floor(baseAmount * modifier));
+            }
+        } else {
+            // 海洋特殊处理，只可能有石油
+            const oilParams = resourceParams.oil;
+            const oilModifier = terrainResourceModifiers[TerrainType.OCEAN].oil;
+            const baseOil = TRandom(oilParams.min, oilParams.max, oilParams.mode);
+            resources.oil = Math.max(0, Math.floor(baseOil * oilModifier));
+        }
+
 
         // 准备要插入/更新的数据
         const regionData: Partial<Region> = {
           RegionId: regionId,
-          guildId: regionId, // 假设 guildId 就是 RegionId
+          guildId: regionId, // 使用 RegionId 作为 guildId 进行 upsert 查找
           Terrain: terrainType,
           maxbase: maxbase,
           population: initialPopulation,
-          resources: resources,
+          resources: resources, // <--- 使用新计算的资源
           // 设置其他字段的默认值
           owner: '',
           leader: '',
           labor: Math.floor(initialPopulation * 0.6), // 简单计算初始劳动力
           base: 0,
           Department: 0,
-          farms: Math.max(1, Math.floor((initialPopulation / 30000) * ( (terrainType === TerrainType.PLAIN ? 0.8 : terrainType === TerrainType.FOREST ? 0.5 : terrainType === TerrainType.HILLS ? 0.3 : 0.1) * 0.7 + 0.3))), // 简化的农场计算
+          // 农场计算可以保持不变或根据新的资源/人口逻辑调整
+          farms: Math.max(1, Math.floor((initialPopulation / 30000) * ( (terrainType === TerrainType.PLAIN ? 0.8 : terrainType === TerrainType.FOREST ? 0.5 : terrainType === TerrainType.HILLS ? 0.3 : 0.1) * 0.7 + 0.3))),
         };
         regionsToUpsert.push(regionData);
         parsedCount++;
@@ -118,15 +157,16 @@ export function WorldMapImport(ctx: Context) {
       }
 
       try {
-        // 分批次插入/更新数据库，避免一次性操作大量数据
+        // 分批次插入/更新数据库
         const batchSize = 500;
         for (let i = 0; i < regionsToUpsert.length; i += batchSize) {
           const batch = regionsToUpsert.slice(i, i + batchSize);
-          await ctx.database.upsert('regiondata', batch, 'guildId'); // 使用 guildId 作为查找键
+          // 注意：upsert 的第三个参数应该是用于查找的键名数组，这里用 guildId
+          await ctx.database.upsert('regiondata', batch, ['guildId']);
           session.send(`已处理 ${Math.min(i + batchSize, regionsToUpsert.length)} / ${regionsToUpsert.length} 个地区...`);
         }
 
-        // 清理不存在于 HTML 中的旧数据 (可选，但推荐)
+        // 清理不存在于 HTML 中的旧数据
         const allDbRegions = await ctx.database.get('regiondata', {});
         const regionsToDelete = allDbRegions.filter(dbRegion => !regionIdsFound.has(dbRegion.guildId));
         if (regionsToDelete.length > 0) {
@@ -134,7 +174,6 @@ export function WorldMapImport(ctx: Context) {
             await ctx.database.remove('regiondata', { guildId: { $in: idsToDelete } });
             session.send(`已清理 ${regionsToDelete.length} 个不存在于 HTML 中的旧地区数据。`);
         }
-
 
         return `地图数据初始化完成！成功从 Map.html 处理了 ${parsedCount} 个地区的数据并更新到数据库。`;
       } catch (dbError) {
