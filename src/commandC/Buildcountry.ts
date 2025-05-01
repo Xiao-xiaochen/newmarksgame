@@ -1,8 +1,8 @@
 //src\commandP\Buildcountry.ts
 
-import { Context, Random, User } from 'koishi'
+import { Context, Random, User, Time } from 'koishi' // 导入 Time
 import { WorldMap } from '../core/Map/MapCore'; // 导入 WorldMap
-import { Region, TerrainType } from '../types'; // 导入 Region 类型 (如果需要明确类型)
+import { Region, TerrainType, userdata } from '../types'; // 导入 userdata 类型
 
 // Helper function to calculate distance between two regions (Chebyshev distance)
 function calculateDistance(regionId1: string, regionId2: string): number {
@@ -18,6 +18,9 @@ function calculateDistance(regionId1: string, regionId2: string): number {
   return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
 }
 
+
+// --- 新增：建国冷却时间 (例如：24小时) ---
+const BUILD_COUNTRY_COOLDOWN = 72 * Time.hour; // 单位：毫秒
 
 export function Buildcountry(ctx: Context) {
   ctx.command('组建国家 [countryName:string]')
@@ -68,24 +71,47 @@ ${username} 同志！
 
       try {
         // 检查用户是否已注册
-        const userInfo = await ctx.database.get('userdata', { userId: userId })
-        if (!userInfo || userInfo.length === 0) {
+        const userInfoResult = await ctx.database.get('userdata', { userId: userId })
+        if (!userInfoResult || userInfoResult.length === 0) {
           return `
 ======[国家]=====
 ${username} 同志！
 您尚未注册！请先发送"阅读报告"进行注册。
 `.trim()
         }
-        // 检查用户是否已经有国家
-        const countryInfo = await ctx.database.get('country', { leaderId: userId })
-        if (countryInfo && countryInfo.length > 0) {
-          return `
+        const userInfo = userInfoResult[0]; // 获取用户数据
+
+        // --- 新增：检查建国冷却时间 ---
+        if (userInfo.lastCountryLeaveTimestamp) {
+          const now = Date.now();
+          const timeSinceLastLeave = now - userInfo.lastCountryLeaveTimestamp;
+          if (timeSinceLastLeave < BUILD_COUNTRY_COOLDOWN) {
+            const remainingTime = BUILD_COUNTRY_COOLDOWN - timeSinceLastLeave;
+            const remainingTimeString = Time.format(remainingTime); // 格式化剩余时间
+            return `
+======[国家]=====
+${username} 同志！
+您刚离开或解散国家不久，请等待 ${remainingTimeString} 后再尝试组建新国家。
+`.trim();
+          }
+        }
+        // --- 冷却时间检查结束 ---
+
+
+        // 检查用户是否已经在一个国家里 (注意：这里检查的是 countryName，不是 leaderId)
+        if (userInfo.countryName) {
+           // 尝试获取用户所在国家的信息，以显示国家名
+           const currentCountry = await ctx.database.get('country', { name: userInfo.countryName });
+           const currentCountryName = currentCountry?.[0]?.name || userInfo.countryName; // 优先用查询到的，否则用用户数据里的
+           return `
 ======[国家]=====
 ${username} 同志！
 您已经在一个国家里了：
-${countryInfo[0].name}
-`.trim()
+${currentCountryName}
+请先使用“退出国家”命令离开当前国家。
+`.trim();
         }
+
 
         // 检查国家名称是否已被使用
         const existingCountry = await ctx.database.get('country', { name: countryName })
@@ -186,7 +212,9 @@ ${username} 同志！
         // 更新用户数据，标记其为国家领导人
         await ctx.database.set('userdata', { userId: userId }, {
           countryName: countryName,
-          isLeader: true
+          isLeader: true,
+          // 可选：在这里清除 lastCountryLeaveTimestamp，因为他们现在是新国家的领袖了
+          // lastCountryLeaveTimestamp: null
         })
 
         let successMessage = `

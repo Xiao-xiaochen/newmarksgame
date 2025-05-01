@@ -1,7 +1,7 @@
 //src\commandP\Playerinfo.ts
 
 import { Context } from 'koishi'
-import { userdata } from '../types' // 导入 userdata 类型
+import { userdata } from '../../types' // 导入 userdata 类型
 
 //import { Playerinfo } from '../core/Player'    等待制作
 
@@ -35,24 +35,24 @@ ${username} 同志
         // 用户已注册，获取用户数据
         const userdata = Userinfo[0]
         const Formalpopulation = ( userdata.population / 10000 ).toFixed(2)
-        
+
         // 返回用户的实际数据
         return `
 ====[全部资料]====
 ${username} 同志！
 ■ 人口：${Formalpopulation}万
 ■ 劳动力：${( userdata.Labor / 10000 ).toFixed(2)}万
-■ 基础设施：${userdata.base}
+■ 基础设施：${userdata.base}/${userdata.maxbase}
 ■ 建筑部门：${userdata.Department}
-■ 农田：${userdata.farms}    
-■ 粮食：${userdata.food}
+■ 农田：${userdata.farms}
+■ 仓库容量：${userdata.warehouseCapacity}
 `.trim()
-        
+
       } catch (error) {
         console.error('查询用户资料时出错:', error)
         return '查询用户资料时发生错误'
       }
     })
-    
+
 }
 
