@@ -1,4 +1,4 @@
-import { Context, Session, h } from 'koishi';
+import { Context, Session, h, Time } from 'koishi';
 import { Country, userdata, Region, TerrainType } from '../types';
 
 // --- 临时邀请存储 ---
@@ -33,6 +33,9 @@ function getAdjacentRegions(regionId: string): string[] {
 }
 
 
+// --- 新增：加入国家冷却时间 (例如 3 天) ---
+const JOIN_COOLDOWN = 3 * Time.day; // 单位：毫秒
+
 export function Invite(ctx: Context) {
     ctx.command('邀请加入国家 <targetUser:user>', '邀请玩家加入你的国家', { authority: 1 })
         .action(async ({ session, options }, targetUser) => {
@@ -41,12 +44,24 @@ export function Invite(ctx: Context) {
 
             const leaderId = session.userId;
             const leaderName = session.author.name || '未知领袖';
-            // 从 "platform:userId" 格式中提取 userId，并处理可能的 @ 符号
-            const targetUserIdMatch = targetUser.match(/[:@]([^>]+)/);
-            const targetUserId = targetUserIdMatch ? targetUserIdMatch[1] : null;
+
+            // --- 修改：更稳健地提取 targetUserId ---
+            let targetUserId: string | null = null;
+            if (typeof targetUser === 'string') {
+                // Koishi 的 :user 类型通常返回 "platform:id" 或仅 "id"
+                // 我们假设 ID 是最后一个由 ':' 分隔的部分
+                const parts = targetUser.split(':');
+                targetUserId = parts[parts.length - 1];
+            }
+
+            // 检查提取结果
+            if (!targetUserId) {
+                console.error(`[Invite] 无法从输入解析 targetUserId: ${targetUser}`);
+                return '无法解析目标用户信息，请确保 @ 了正确的用户或提供了有效的用户ID。';
+            }
+            // --- 修改结束 ---
 
 
-            if (!targetUserId) return '无法解析目标用户信息，请确保 @ 了正确的用户。';
             if (targetUserId === leaderId) return '你不能邀请自己。';
 
             // 清理可能存在的旧邀请
@@ -71,12 +86,16 @@ export function Invite(ctx: Context) {
                 // const capitalRegionId = country.capitalRegionId; // 暂时不需要首都ID
 
                 // 3. 检查被邀请者状态 (保持不变)
-                const targetData = await ctx.database.get('userdata', { userId: targetUserId });
+                const targetData = await ctx.database.get('userdata', { userId: targetUserId }); // 使用提取出的 targetUserId
                 if (!targetData || targetData.length === 0) {
+                    // --- 修改：提供更清晰的用户名 ---
                     return `玩家 ${targetUserId} 尚未注册，无法邀请。`;
+                    // --- 修改结束 ---
                 }
                 if (targetData[0].countryName) {
+                    // --- 修改：提供更清晰的用户名 ---
                     return `玩家 ${targetUserId} 已经是 ${targetData[0].countryName} 的成员了。`;
+                    // --- 修改结束 ---
                 }
 
                 // 4. 存储邀请信息
@@ -114,7 +133,9 @@ export function Invite(ctx: Context) {
                     await session.send(`已向 ${targetUserId} 发出邀请。请目标用户在 ${INVITE_TIMEOUT / 1000} 秒内使用命令 “接受邀请” 或 “拒绝邀请” 进行回复。`);
                 }
 
+                // --- 修改：提供更清晰的用户名 ---
                 return `邀请已发送给 ${targetUserId}。`; // 给邀请者的反馈
+                // --- 修改结束 ---
 
             } catch (error) {
                 console.error(`处理邀请时出错 (邀请者: ${leaderId}, 被邀请者: ${targetUserId}):`, error);
@@ -122,7 +143,7 @@ export function Invite(ctx: Context) {
             }
         });
 
-    // --- 新增：接受邀请命令 ---
+    // --- 修改：接受邀请命令 ---
     ctx.command('接受邀请', '接受来自某个国家的邀请')
         .action(async ({ session }) => {
             if (!session || !session.userId) return '无法获取用户信息。';
@@ -134,7 +155,7 @@ export function Invite(ctx: Context) {
                 return '你当前没有待处理的国家邀请。';
             }
 
-            // 检查邀请是否超时
+            // 检查邀请是否超时 (保持不变)
             if (Date.now() - invite.timestamp > INVITE_TIMEOUT) {
                 pendingInvites.delete(targetUserId); // 清除过期邀请
                 return '邀请已过期。';
@@ -143,15 +164,29 @@ export function Invite(ctx: Context) {
             const { inviterId, inviterName, countryName } = invite;
 
             try {
-                // 再次检查用户是否已加入国家（防止并发问题）
-                const currentUserData = await ctx.database.get('userdata', { userId: targetUserId });
-                if (currentUserData && currentUserData.length > 0 && currentUserData[0].countryName) {
+                // 再次检查用户是否已加入国家（防止并发问题）(保持不变)
+                const currentUserDataResult = await ctx.database.get('userdata', { userId: targetUserId });
+                const currentUserData = currentUserDataResult?.[0]; // 获取玩家数据
+
+                if (currentUserData && currentUserData.countryName) {
                      pendingInvites.delete(targetUserId); // 清除邀请
-                     return `你已经是 ${currentUserData[0].countryName} 的成员了。`;
+                     return `你已经是 ${currentUserData.countryName} 的成员了。`;
                 }
 
-                // 获取国家信息，特别是首都ID和成员列表
-                const countryData = await ctx.database.get('country', { name: countryName });
+                // --- 新增：检查加入冷却时间 ---
+                if (currentUserData?.lastCountryLeaveTimestamp) {
+                    const timeSinceLeave = Date.now() - currentUserData.lastCountryLeaveTimestamp;
+                    if (timeSinceLeave < JOIN_COOLDOWN) {
+                        const remainingTime = Time.format(JOIN_COOLDOWN - timeSinceLeave);
+                        pendingInvites.delete(targetUserId); // 冷却中，清除邀请
+                        return `你刚离开上一个国家不久，请等待 ${remainingTime} 后再加入新国家。`;
+                    }
+                }
+                // --- 冷却检查结束 ---
+
+
+                // 获取国家信息 (保持不变)
+                 const countryData = await ctx.database.get('country', { name: countryName });
                  if (!countryData || countryData.length === 0) {
                      pendingInvites.delete(targetUserId); // 清除邀请
                      return `错误：邀请你加入的国家 ${countryName} 似乎不存在了。`;
@@ -160,7 +195,7 @@ export function Invite(ctx: Context) {
                  const capitalRegionId = country.capitalRegionId;
 
                 // --- 玩家接受邀请 ---
-                // 1. 更新玩家和国家数据
+                // 1. 更新玩家和国家数据 (保持不变)
                 await ctx.database.set('userdata', { userId: targetUserId }, { countryName: countryName, isLeader: false });
                 const updatedMembers = [...country.members, targetUserId];
                 await ctx.database.set('country', { name: countryName }, { members: updatedMembers });
@@ -169,8 +204,14 @@ export function Invite(ctx: Context) {
 
                 let assignedRegionMessage = '';
 
-                // 2. 尝试分配新地区 (成员数 < 5)
-                if (updatedMembers.length < 5 && capitalRegionId) {
+                // --- 修改：使用 get().then(.length) 获取地区数量 ---
+                const ownedRegions = await ctx.database.get('regiondata', { owner: countryName });
+                const ownedRegionCount = ownedRegions.length;
+                // --- 修改结束 ---
+
+                // 2. 尝试分配新地区 (国家当前拥有地区数 < 5 且有首都)
+                // --- 使用正确的 ownedRegionCount ---
+                if (ownedRegionCount < 5 && capitalRegionId) {
                     const adjacentIds = getAdjacentRegions(capitalRegionId);
                     if (adjacentIds.length > 0) {
                         const adjacentRegions = await ctx.database.get('regiondata', { RegionId: { $in: adjacentIds } });
@@ -192,9 +233,11 @@ export function Invite(ctx: Context) {
                     } else {
                          assignedRegionMessage = '\n□首都地区无相邻区域。';
                     }
-                } else if (updatedMembers.length >= 5) {
-                    assignedRegionMessage = '\n□国家成员已达上限，不再自动分配新地区。';
+                } else if (ownedRegionCount >= 5) {
+                    assignedRegionMessage = '\n□国家控制地区已达上限，不再自动分配新地区。';
                 }
+                // --- 修改结束 ---
+
 
                 // 通知邀请者
                  try {

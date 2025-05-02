@@ -3,21 +3,7 @@
 import { Context, Random, User, Time } from 'koishi' // 导入 Time
 import { WorldMap } from '../core/Map/MapCore'; // 导入 WorldMap
 import { Region, TerrainType, userdata } from '../types'; // 导入 userdata 类型
-
-// Helper function to calculate distance between two regions (Chebyshev distance)
-function calculateDistance(regionId1: string, regionId2: string): number {
-  if (!/^\d{4}$/.test(regionId1) || !/^\d{4}$/.test(regionId2)) {
-    console.warn(`Invalid region ID format for distance calculation: ${regionId1}, ${regionId2}`);
-    return Infinity; // Return a large distance for invalid IDs
-  }
-  const x1 = parseInt(regionId1.substring(0, 2), 10);
-  const y1 = parseInt(regionId1.substring(2, 4), 10);
-  const x2 = parseInt(regionId2.substring(0, 2), 10);
-  const y2 = parseInt(regionId2.substring(2, 4), 10);
-
-  return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
-}
-
+import { validateCountryName } from '../utils/Namecheck'; // 导入国家名称验证函数
 
 // --- 新增：建国冷却时间 (例如：24小时) ---
 const BUILD_COUNTRY_COOLDOWN = 72 * Time.hour; // 单位：毫秒

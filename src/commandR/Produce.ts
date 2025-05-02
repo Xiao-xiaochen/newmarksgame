@@ -1,7 +1,7 @@
 import { Context } from "koishi";
 // 导入 produce 函数和 MILITARY_ITEMS
 import { MILITARY_ITEMS, produce } from "../core/MilitaryProduction";
-import { Region } from "../types";
+import { Region, userdata } from "../types"; // <--- 确保导入 userdata 类型
 // 移除未使用的 hasEnoughWarehouseSpace，因为它现在在 produce 函数内部处理
 // import { hasEnoughWarehouseSpace } from "../utils/Warehouse";
 
@@ -9,7 +9,7 @@ import { Region } from "../types";
 // const PRODUCT_TO_WAREHOUSE_KEY: Record<string, string> = { ... };
 
 export function RegionProduce(ctx: Context) {
-  ctx.command("地区生产 <item:string> <factoryCount:number>")
+  ctx.command("地区军事生产 <item:string> <factoryCount:number>")
     .usage("地区生产 [物品] [分配工厂数]")
     .example("地区生产 坦克 1")
     .action(async ({ session }, item, factoryCount) => {
@@ -20,10 +20,11 @@ export function RegionProduce(ctx: Context) {
       if (!userId || !guildId) return "无法获取用户或地区信息";
 
       // 检查用户注册
-      const userInfo = await ctx.database.get("userdata", { userId });
-      if (!userInfo || userInfo.length === 0) {
+      const userInfoResult = await ctx.database.get("userdata", { userId }); // 修改变量名避免冲突
+      if (!userInfoResult || userInfoResult.length === 0) {
         return `====[错误]====\n${username} 同志！\n您尚未注册！\n请先发送“阅读报告”`;
       }
+      const user: userdata = userInfoResult[0]; // 获取用户数据
 
       // 获取地区数据
       const regionArr = await ctx.database.get("regiondata", { guildId });
@@ -31,6 +32,23 @@ export function RegionProduce(ctx: Context) {
         return `====[错误]====\n${username} 同志！\n当前群聊未绑定任何地区。`;
       }
       const region: Region = regionArr[0];
+      const targetRegionId = region.RegionId; // 获取地区ID
+
+      // --- 新增：检查驻扎状态 ---
+      if (user.regionId !== targetRegionId) {
+        return `====[错误]====\n${username} 同志！\n您必须驻扎在地区 ${targetRegionId} 才能在此进行生产。请先使用“驻扎”指令。`;
+      }
+      // --- 驻扎状态检查结束 ---
+
+      // --- 权限和国家检查 (可选但推荐) ---
+      if (!region.owner) {
+          return `====[错误]====\n地区 ${targetRegionId} 当前为无主地，无法进行生产。`;
+      }
+      if (user.countryName !== region.owner) {
+          return `====[错误]====\n您 (${user.countryName}) 不属于控制该地区 (${targetRegionId}) 的国家 (${region.owner})，无法进行生产。`;
+      }
+      // --- 权限检查结束 ---
+
 
       // --- 基本参数校验 ---
       if (!item || !MILITARY_ITEMS[item]) {

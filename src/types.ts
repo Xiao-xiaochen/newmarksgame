@@ -122,6 +122,7 @@ export interface userdata {
   countryName?: string; // 所属国家名称
   isLeader?: boolean;   // 是否为国家领袖
   lastCountryLeaveTimestamp?: number; // 上次离开/解散国家的时间戳 (用于建国冷却)
+  lastStationTimestamp?: number; // 新增：记录上次驻扎的时间戳
 
 }
 
@@ -135,6 +136,7 @@ export interface Country {
   capitalRegionId: string;// 首都地区ID
   regions: string[];      // 控制的地区ID列表 (冗余存储，方便查询)
   // establishedDate?: Date; // 建立日期 (可以考虑添加)
+  lastRenameTimestamp?: number; // 上次重命名的时间戳 (用于冷却)
 
 }
 
@@ -145,54 +147,66 @@ export interface Region {
   owner: string;    // 控制者 (国家名称 或 null)
   leader: string;   // 地区领导者 (用户ID 或 null)
 
-  population: number; // 地区人口
-  labor: number;      // 地区总劳动力
-  Busylabor: number;  // 地区繁忙劳动力
-  Fixlabor: number;   // 地区固定劳动力
-  power: number;      // 地区电力? (发电量? 需求量?)
+  population: number;   // 总人口
+  labor: number;     // 地区劳动力
+  Busylabor: number;    // 可用劳动力 (空闲劳动力)
+  // Fixlabor?: number;    // 移除: 固定劳动力 (被占用的劳动力)
+  // power: number;      // 地区电力? (暂时移除)
 
   base: number;       // 地区基础设施等级/数量
   maxbase: number;    // 地区最大基础设施
 
-  Department: number;           // 地区建筑部门等级/数量
-  Constructioncapacity: number; // 地区当前建造力
+  Department: number;           // 地区建筑部门数量 (不再是等级)
+  Constructioncapacity: number; // 地区每小时产生的建造力
+  constructionQueue?: string;   // 新增: 存储建造队列的 JSON 字符串
 
-  // 建筑/设施数量
+  // --- 建筑/设施数量 ---
   farms: number;        // 农场
   mfactory: number;     // 军工厂 (总数)
-  busymfactory: number; // 正在工作的军工厂
-  Mine: number;         // 矿场 (总数)
-  busymine: number;     // 正在工作的矿场
+  busymfactory: number; // 正在工作的军工厂 (这个字段可能需要重新考虑，或者合并到Busylabor/Fixlabor逻辑中)
+  Mine: number;         // 矿场 (总数) - 需要细化为具体矿种吗？例如 coalMine, ironMine
+  // busymine: number;     // 正在工作的矿场 (同上) <--- 移除此行
   oilwell: number;      // 油井 (总数)
-  busyoilwell: number;  // 正在工作的油井
+  busyoilwell: number;  // 正在工作的油井 (同上)
   steelmill: number;    // 钢铁厂 (总数)
-  busysteelmill: number;// 正在工作的钢铁厂
+  busysteelmill: number;// 正在工作的钢铁厂 (同上)
+  lightIndustry?: number; // 新增: 轻工厂
+  refinery?: number;      // 新增: 炼油厂
+  powerPlant?: number;    // 新增: 发电厂 (占位，暂无功能)
+  concretePlant?: number;// 新增: 混凝土厂
+  machineryPlant?: number; // 新增: 机械厂
+  miningAllocation?: Record<string, number>; // 矿场分配记录
+  laborAllocation?: Record<string, number>; // 新增: 劳动力分配记录 { buildingKey: count }
 
-  warehouseCapacity: number;    
+
+  warehouseCapacity: number;
   OwarehouseCapacity: number;
-  militarywarehouseCapacity: number;    
-  OmilitarywarehouseCapacity: number;    
+  militarywarehouseCapacity: number;
+  OmilitarywarehouseCapacity: number;
 
-  // 地区仓库 (与玩家仓库分开)
+  // --- 地区仓库 (与玩家仓库分开) ---
   warehouse: {
     food: number;
-    goods: number;
+    goods: number; // 生活消费品
     rubber: number;
-    Mazout: number;
-    Diesel: number;
-    fuel: number;
-    Asphalt: number;
-    Gas: number;
+    Mazout: number; // 重油
+    Diesel: number; // 柴油
+    fuel: number;   // 燃料 (通用?)
+    Asphalt: number;// 沥青
+    Gas: number;    // 天然气? 汽油?
     rareMetal: number;
     rareEarth: number;
     coal: number;
-    ironOre: number;
+    ironOre: number;   // 铁矿石
     steel: number;
     aluminum: number;
-    oil: number;
+    oil: number;       // 原油
+    concrete?: number; // 新增: 混凝土
+    stone?: number;     // 新增: 石材
+    machinery?: number;// 新增: 机械
   };
 
-  // 地区军事仓库 (与玩家仓库分开)
+  // --- 地区军事仓库 (与玩家仓库分开) ---
   militarywarehouse: {
     bomb: number;
     car: number;
@@ -208,7 +222,7 @@ export interface Region {
     Transportaircraft: number;
   };
 
-  // 地区固有资源储量? (与仓库区别?)
+  // --- 地区固有资源储量? (与仓库区别?) ---
   resources: {
     rareMetal: number;
     rareEarth: number;

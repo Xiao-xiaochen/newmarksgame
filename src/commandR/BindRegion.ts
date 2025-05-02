@@ -2,7 +2,8 @@ import { Context } from 'koishi';
 
 export function BindRegion(ctx: Context) {
   ctx.command('绑定地区 <regionId:string>')
-    .usage('将指定的地区与当前群聊绑定。仅国家领导人可操作，且只能绑定自己国家的首都地区。')
+    // 更新用法说明，移除“首都”限制
+    .usage('将指定的地区与当前群聊绑定。仅国家领导人可操作，且只能绑定自己国家拥有的地区。')
     .example('绑定地区 0101')
     .action(async ({ session }, regionId) => {
       if (!session || !session.guildId) {
@@ -31,14 +32,16 @@ export function BindRegion(ctx: Context) {
             return `${username} 同志，您的用户数据中缺少国家信息。`;
         }
 
-        // 2. 获取国家信息，确认要绑定的地区是否为首都
-        const countryData = await ctx.database.get('country', { name: userCountryName });
-        if (!countryData || countryData.length === 0) {
-            return `错误：找不到您的国家 ${userCountryName} 的信息。`;
-        }
-        if (countryData[0].capitalRegionId !== regionId) {
-            return `您只能绑定您国家的首都地区 (${countryData[0].capitalRegionId})。`;
-        }
+        // 2. 获取国家信息 (不再需要检查是否为首都)
+        // const countryData = await ctx.database.get('country', { name: userCountryName });
+        // if (!countryData || countryData.length === 0) {
+        //     return `错误：找不到您的国家 ${userCountryName} 的信息。`;
+        // }
+        // --- 移除首都检查 ---
+        // if (countryData[0].capitalRegionId !== regionId) {
+        //     return `您只能绑定您国家的首都地区 (${countryData[0].capitalRegionId})。`;
+        // }
+        // --- 移除首都检查结束 ---
 
         // 3. 获取地区信息
         const regionData = await ctx.database.get('regiondata', { RegionId: regionId });
@@ -46,18 +49,17 @@ export function BindRegion(ctx: Context) {
           return `错误：找不到地区 ${regionId} 的信息。`;
         }
 
-        // 4. 检查地区是否属于该国家
+        // 4. 检查地区是否属于该国家 (这个检查仍然需要)
         if (regionData[0].owner !== userCountryName) {
           return `地区 ${regionId} 不属于您的国家 ${userCountryName}。`;
         }
 
-        // 5. 检查地区是否已被其他群聊绑定 (根据新逻辑修改)
-        // 条件：地区有 guildId，且该 guildId 不是当前群聊的 guildId，且长度大于 4
+        // 5. 检查地区是否已被其他群聊绑定
         if (regionData[0].guildId && regionData[0].guildId !== guildId && String(regionData[0].guildId).length > 4) {
-          return `地区 ${regionId} 已被群聊 ${regionData[0].guildId} 绑定。`; // 提示哪个群聊绑定了
+          return `地区 ${regionId} 已被群聊 ${regionData[0].guildId} 绑定。`;
         }
 
-        // 检查是否已绑定到当前群聊 (这个检查可以保留或合并到上面)
+        // 检查是否已绑定到当前群聊
         if (regionData[0].guildId === guildId) {
             return `地区 ${regionId} 已经绑定到当前群聊。`;
         }
@@ -71,11 +73,14 @@ export function BindRegion(ctx: Context) {
         // 7. 执行绑定
         await ctx.database.set('regiondata', { RegionId: regionId }, { guildId: guildId });
 
-        return `成功将地区 ${regionId} (${userCountryName} 首都) 绑定到当前群聊。`;
+        // 更新成功消息，移除“首都”字样
+        return `成功将地区 ${regionId} (属于 ${userCountryName}) 绑定到当前群聊。`;
 
       } catch (error) {
         console.error(`绑定地区 ${regionId} 到群聊 ${guildId} 时出错:`, error);
-        return `绑定地区时发生错误: ${error.message}`;
+        // 强类型断言 error 为 Error 类型
+        const errorMessage = (error as Error).message;
+        return `绑定地区时发生错误: ${errorMessage}`;
       }
     });
 }

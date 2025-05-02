@@ -1,5 +1,6 @@
-import { Context } from 'koishi';
+import { Context, segment } from 'koishi'; // 导入 segment
 import { userdata, Country } from '../types'; // 确保导入 userdata 和 Country 类型
+import path from 'path'; // 导入 path 模块用于处理路径
 
 // 用于存储待确认的国家解散请求 { userId: timestamp }
 const pendingDismissConfirmations: Record<string, number> = {};
@@ -14,7 +15,7 @@ export function Dismisscountry(ctx: Context) {
 
       const leaderId = session.userId;
       const leaderName = session.author.name || '未知用户';
-      const now = Date.now();
+      const now = Date.now(); // 获取当前时间戳
 
       // 检查用户是否为领袖 (提前检查，减少不必要的确认流程)
       try {
@@ -39,19 +40,26 @@ export function Dismisscountry(ctx: Context) {
           if (!countryData || countryData.length === 0) {
             delete pendingDismissConfirmations[leaderId]; // 清除确认状态
             console.warn(`数据不一致：领袖 ${leaderId} 确认解散时，国家 ${countryName} 已不存在。`);
-            await ctx.database.set('userdata', { userId: leaderId }, { countryName: null, isLeader: false });
+            // 即使国家不存在，也尝试重置领袖状态并记录离开时间
+            await ctx.database.set('userdata', { userId: leaderId }, { countryName: null, isLeader: false, lastCountryLeaveTimestamp: now }); // 添加时间戳
             return `发生数据错误，似乎您领导的国家 ${countryName} 已不存在。已将您的状态重置。`;
           }
           const country = countryData[0];
           const memberIds = country.members || [];
 
-          // 3. 将所有成员（包括领袖）设置为无国家状态
-          const updateResult = await ctx.database.set('userdata', { userId: { $in: memberIds } }, { countryName: null, isLeader: false });
-          console.log(`国家 ${countryName} 解散：更新了 ${updateResult.matched} 个成员的状态。`);
+          // 3. 将所有成员（包括领袖）设置为无国家状态，并记录离开时间
+          // --- 修改这里，增加 lastCountryLeaveTimestamp: now ---
+          const updateResult = await ctx.database.set('userdata', { userId: { $in: memberIds } }, {
+            countryName: null,
+            isLeader: false,
+            lastCountryLeaveTimestamp: now // 记录解散（离开）时间
+          });
+          // --- 修改结束 ---
+          console.log(`国家 ${countryName} 解散：更新了 ${updateResult.matched} 个成员的状态并记录离开时间。`);
 
-          // 4. 释放国家控制的所有地区
-          const regionUpdateResult = await ctx.database.set('regiondata', { owner: countryName }, { owner: null, leader: null });
-          console.log(`国家 ${countryName} 解散：释放了 ${regionUpdateResult.matched} 个地区。`);
+          // 4. 释放国家控制的所有地区，并清除群聊绑定
+          const regionUpdateResult = await ctx.database.set('regiondata', { owner: countryName }, { owner: null, leader: null, guildId: null });
+          console.log(`国家 ${countryName} 解散：释放了 ${regionUpdateResult.matched} 个地区，并清除了它们的群聊绑定。`);
 
           // 5. 删除国家记录
           await ctx.database.remove('country', { name: countryName });
@@ -59,8 +67,28 @@ export function Dismisscountry(ctx: Context) {
           // 清除确认状态
           delete pendingDismissConfirmations[leaderId];
 
-          // 6. 通知领袖
-          return `国家 【${countryName}】 已被成功解散。所有成员已恢复为无国家状态，所有控制地区已被释放。`;
+          // --- 发送解散后的音乐 ---
+          try {
+            const audioAbsolutePath = 'e:/Dev/koishi-app/external/newmarksgame/src/Music/战斗仍将继续.ogg';
+            if (session.platform === 'onebot') {
+                await session.send(segment.audio(`file:///${audioAbsolutePath}`));
+                console.log(`已向会话 ${session.sid} 发送解散国家后的音频。`);
+            } else {
+                console.warn(`当前平台 ${session.platform} 可能不支持直接发送本地音频文件路径。`);
+            }
+          } catch (audioError) {
+            console.error(`发送解散国家音频时出错:`, audioError);
+          }
+          // --- 音频发送结束 ---
+
+          // --- 发送两条消息 ---
+          // 6. 通知领袖 - 第一条消息 (解散结果)
+          await session.send(`国家 【${countryName}】 已解散。所有成员已恢复为无国家状态，所有控制地区已被释放并解除群聊绑定。`);
+
+          // 7. 通知领袖 - 第二条消息 (伤感的话)
+          await session.send(`人民们！战斗仍将继续！`);
+          // --- 消息发送结束 ---
+
           // --- 解散操作结束 ---
 
         } else {
@@ -94,7 +122,9 @@ ${leaderName} 同志！
       } catch (error) {
         console.error(`处理解散国家命令时出错 (领袖: ${leaderId}):`, error);
         delete pendingDismissConfirmations[leaderId]; // 出错也要清除状态
-        return '处理解散国家命令时发生内部错误。';
+        // 强类型断言 error 为 Error 类型
+        const errorMessage = (error as Error).message;
+        return `处理解散国家命令时发生内部错误: ${errorMessage}`; // 返回错误信息
       }
     });
 }

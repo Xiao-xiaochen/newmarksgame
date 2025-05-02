@@ -23,6 +23,7 @@ import { PPopulation } from "./commandP/Population"; // 玩家人口相关？（
 import { DepartmentStatus } from "./commandP/SPY/DepartmentStatus"; // 间谍部门状态
 import { MyMilitaryWarehouse } from './commandP/Info/Militarywarehouse'; // 玩家军事仓库
 import { MyWarehouse } from './commandP/Info/Mywarehouse'; // 玩家仓库
+import { Stationed } from './commandP/Stationed'; // 玩家驻扎
 
 
 // --- 地区相关 ---
@@ -35,6 +36,13 @@ import { GeneralBuild } from "./commandR/GeneralBuild"; // 通用建造
 import { RegionProduce } from './commandR/Produce'; // 地区生产
 import { RegionWarehouse } from './commandR/RegionInfo/Regionwarehouse'; // 地区仓库
 import { RegionMilitaryWarehouse } from './commandR/RegionInfo/RegionMilitaryWarehouse'; // 地区军事仓库
+import { DisbindRegion } from './commandR/DisbindRegion'; // <--- 导入解除绑定指令
+import { MineCommand } from './commandR/Mine'; // <--- 导入采矿指令
+import { LaborCommand } from './commandR/Labor'; // <--- 导入劳动力指令
+import { RefineOilCommand } from './commandR/RefineOil'; // <--- 导入精炼油指令
+import { SteelmakingCommand } from './commandR/Steelmaking'; // <--- 导入钢铁制造指令
+import { HourCheckIn } from './core/HourCheckIn'; // <--- 导入地区小时签到指令
+
 
 
 // --- 国家/势力相关 ---
@@ -46,6 +54,8 @@ import { RegionList } from './commandC/RegionList';
 import { Hiscountry } from './commandP/Hiscountry'; // <--- 导入他的国家指令
 import { ExitCountry } from './commandC/ExitCountry'; // <--- 退出国家指令、
 import { Dismisscountry } from './commandC/Dismisscountry'; // <--- 解散国家指令
+import { ChangenName} from './commandC/ChangenName'; // <--- 国家改名指令
+import { ForceChangenName } from "./commandC/ForceChangenName";
 
 export const inject = {
   required: ['database', 'puppeteer']
@@ -66,6 +76,7 @@ export function apply(ctx: Context) {
     WorldMapReset(ctx);     // 重置地图
     BindRegion(ctx);        // 绑定地区
     TerrainInfo(ctx);       // 查看地形
+    DisbindRegion(ctx);      // 解除绑定
 
     // --- 玩家相关 ---
     Playerinfo(ctx);        // 玩家信息
@@ -74,6 +85,7 @@ export function apply(ctx: Context) {
     DepartmentStatus(ctx);  // 间谍部门状态
     MyMilitaryWarehouse(ctx); // 玩家军事仓库
     MyWarehouse(ctx);       // 玩家仓库
+    Stationed(ctx);         // 玩家驻扎
 
     // --- 地区相关 ---
     Regioninfo(ctx);        // 地区信息
@@ -85,6 +97,11 @@ export function apply(ctx: Context) {
     RegionProduce(ctx);     // 地区生产
     RegionWarehouse(ctx);    // 地区仓库
     RegionMilitaryWarehouse(ctx); // 地区军事仓库
+    MineCommand(ctx);        // 地区采矿
+    LaborCommand(ctx);       // 地区劳动力
+    RefineOilCommand(ctx);    // 精炼油
+    SteelmakingCommand(ctx);    // 钢铁制造
+    HourCheckIn(ctx);        // 地区小时签到
 
     // --- 国家/势力相关 ---
     Buildcountry(ctx);      // 建立国家
@@ -95,6 +112,8 @@ export function apply(ctx: Context) {
     Hiscountry(ctx);         // 他的国家 <--- 注册他的国家指令
     ExitCountry(ctx);         // 退出国家
     Dismisscountry(ctx);     // 解散国家
+    ChangenName(ctx);         // 国家改名
+    ForceChangenName(ctx);   // 强制国家改名
 
     // --- 移除或待整理的旧指令 (注释掉) ---
     // ProduceTank(ctx)

@@ -45,7 +45,14 @@ export function ExitCountry(ctx: Context) {
 
         // 6. 更新国家和用户数据
         await ctx.database.set('country', { name: countryName }, { members: updatedMembers });
-        await ctx.database.set('userdata', { userId: userId }, { countryName: null, isLeader: false }); // isLeader 设为 false 以防万一
+        // --- 修改：在更新用户数据时，加入离开时间戳 ---
+        const now = Date.now();
+        await ctx.database.set('userdata', { userId: userId }, {
+          countryName: null,
+          isLeader: false, // isLeader 设为 false 以防万一
+          lastCountryLeaveTimestamp: now // 记录离开时间
+        });
+        // --- 修改结束 ---
 
         return `${username} 同志，你已成功退出国家 【${countryName}】。`;
 

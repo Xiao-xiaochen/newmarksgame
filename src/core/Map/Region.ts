@@ -162,8 +162,6 @@ export class RegionManager {
       resources: resources, // 使用新生成的资源对象
       Terrain: traits.terrainType,
       Busylabor: 0,
-      Fixlabor: 0,
-      power: 0,
 
       warehouse: {
         food: 0,
@@ -186,7 +184,6 @@ export class RegionManager {
       mfactory: 0,
       busymfactory: 0,
       Mine: 0,
-      busymine: 0,
       oilwell: 0,
       busyoilwell: 0,
       steelmill: 0,

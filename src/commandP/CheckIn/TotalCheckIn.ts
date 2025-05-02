@@ -81,16 +81,14 @@ export function CheckIn(ctx: Context) {
           const formalLabor = (newUser.Labor / 10000).toFixed(2);
 
           return `
-===[新马列文游]===
+====[征战文游]====
 ${username} 同志！
-欢迎游玩新马列文游！已为您建立档案。
 □初始状态:
 ■ 人口：${formalPopulation}万 (劳动力 ${formalLabor}万)
 ■ 基础设施：${newUser.base}/${newUser.maxbase}
 ■ 建筑部门：${newUser.Department}
 ■ 仓库-粮食：${newUser.warehouse.food} / ${newUser.warehouseCapacity}
 `.trim();
-
         } else {
           // --- 处理已注册用户的签到/阅读报告 ---
           const currentUserData = userInfo[0];
@@ -104,7 +102,7 @@ ${username} 同志！
           } else {
             // 每日奖励
             const populationIncrease = TRandom(300, 1000, 5000);
-            const foodIncrease = TRandom(100, 300, 500); // 稍微增加点食物奖励
+            const foodIncrease = TRandom(1, 3, 5); // 稍微增加点食物奖励
 
             // 更新用户数据
             const updatedPopulation = currentUserData.population + populationIncrease;
@@ -125,12 +123,11 @@ ${username} 同志！
               OwarehouseCapacity: updatedOwarehouseCapacity // 更新仓库占用
             });
 
-            const formalPopulationIncrease = (populationIncrease / 10000).toFixed(2);
             return `
 ===[新马列文游]===
 ${username} 同志！
 每日报告已阅，获得物资：
-■ 人口：+${formalPopulationIncrease}万
+■ 人口：+${populationIncrease}
 ■ 仓库-粮食：+${foodIncrease}
 `.trim();
           }

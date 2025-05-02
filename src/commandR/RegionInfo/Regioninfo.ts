@@ -80,7 +80,7 @@ ${username} 同志！
 ■领导人：${regiondata.leader || '无'}
 □地区人口：${FormalPopulation} 万
 □基础设施：${regiondata.base}/${regiondata.maxbase}
-□地区仓库： 未完成
+□地区仓库： ${regiondata.OwarehouseCapacity ?? '?'} / ${regiondata.warehouseCapacity ?? '?'}
 □第一产业数量：${regiondata.farms}
 □第二产业数量：${regiondata.Department}
 ■地区驻军：未完成

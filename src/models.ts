@@ -78,7 +78,8 @@ export function Database(ctx: Context) {
     // --- 国家相关 ---
     countryName: { type: 'string', length: 255, nullable: true }, // 允许为空
     isLeader: { type: 'boolean', initial: false },
-    lastCountryLeaveTimestamp: { type: 'unsigned', initial: 0 }, // 上次离开/解散国家的时间戳
+    lastCountryLeaveTimestamp: 'integer', // 上次离开/解散国家的时间戳
+    lastStationTimestamp: 'integer', // 上次建造车站的时间戳
 
   }, {
     primary: 'userId'
@@ -91,6 +92,7 @@ export function Database(ctx: Context) {
     members: { type: 'json', initial: [] }, // 成员 UserID 列表
     capitalRegionId: { type: 'string', length: 255, nullable: true }, // 首都地区 ID
     regions: { type: 'json', initial: [] }, // 控制的地区 ID 列表
+    lastRenameTimestamp: { type: 'unsigned', length: 255 }, // 上次重命名的时间戳 (用于冷却)
   }, {
     primary: 'name'
   })
@@ -106,10 +108,10 @@ export function Database(ctx: Context) {
     population: { type: 'unsigned', initial: 0 },
     labor: { type: 'unsigned', initial: 0 },
     Busylabor: { type: 'unsigned', initial: 0 },
-    Fixlabor: { type: 'unsigned', initial: 0 },
+    //Fixlabor: { type: 'unsigned', initial: 0 },
+    laborAllocation: { type: 'json', initial: {} }, // <--- 新增此行
 
     // --- 电力与基建 ---
-    power: { type: 'unsigned', initial: 0 }, // 电力
     base: { type: 'unsigned', initial: 0 }, // 基础设施
     maxbase: { type: 'unsigned', initial: 0 }, // 最大基础设施
 
@@ -120,11 +122,17 @@ export function Database(ctx: Context) {
     mfactory: { type: 'unsigned', initial: 0 },
     busymfactory: { type: 'unsigned', initial: 0 },
     Mine: { type: 'unsigned', initial: 0 },
-    busymine: { type: 'unsigned', initial: 0 },
+    // busymine: { type: 'unsigned', initial: 0 }, // <--- 移除此行
     oilwell: { type: 'unsigned', initial: 0 },
     busyoilwell: { type: 'unsigned', initial: 0 },
     steelmill: { type: 'unsigned', initial: 0 },
     busysteelmill: { type: 'unsigned', initial: 0 },
+    lightIndustry: { type: 'unsigned', initial: 0 }, // 新增
+    refinery: { type: 'unsigned', initial: 0 },      // 新增
+    powerPlant: { type: 'unsigned', initial: 0 },    // 新增
+    concretePlant: { type: 'unsigned', initial: 0 },
+    machineryPlant: { type: 'unsigned', initial: 0 }, // 新增
+    miningAllocation: { type: 'json', initial: {} }, // <--- 新增此行
 
     // --- 仓库容量 ---
     warehouseCapacity: { type: 'unsigned', initial: 0 },
@@ -136,7 +144,8 @@ export function Database(ctx: Context) {
     warehouse: {
       type: 'json', initial: {
         food: 0, goods: 0, rubber: 0, Mazout: 0, Diesel: 0, fuel: 0, Asphalt: 0, Gas: 0,
-        rareMetal: 0, rareEarth: 0, coal: 0, ironOre: 0, steel: 0, aluminum: 0, oil: 0
+        rareMetal: 0, rareEarth: 0, coal: 0, ironOre: 0, steel: 0, aluminum: 0, oil: 0, stone:0, concrete:0,
+        machinery: 0 // 确保这里有
       }
     },
     militarywarehouse: {
@@ -159,5 +168,4 @@ export function Database(ctx: Context) {
   }, {
     primary: 'RegionId',
   });
-
 }

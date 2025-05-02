@@ -1,23 +1,43 @@
 //src\commandR\Laborinfo.ts
 
 import { Context } from 'koishi'
+import { Region } from '../../types' // 导入 Region 类型
 
 export function Laborinfo(ctx: Context) {
-  ctx.command('查看地区劳动力')
+  ctx.command('查看地区劳动力').alias('地区劳动力', '劳动力') // 添加别名
   .action(async ( {session} ) => {
     const username = session?.author?.name || '未知用户'
-    const guildId = session?.guildId  || '未知频道'
-    const userId = session?.userId                         //我们正在考虑commandR到底要不要写上username和userId
+    const guildId = session?.guildId
+    const userId = session?.userId
+
     if (!session) {
-      return '会话不存在'
+      return '无法获取会话信息。'
     }
+    if (!guildId) {
+        return '此命令只能在群聊中使用。'
+    }
+
+    // --- 查询地区数据 ---
+    const regionDataResult = await ctx.database.get('regiondata', { guildId: guildId })
+    if (!regionDataResult || regionDataResult.length === 0) {
+        return `当前群聊 (${guildId}) 未绑定任何地区。请先使用“绑定地区”指令。`
+    }
+    const region: Region = regionDataResult[0]
+
+    // --- 提取劳动力数据 ---
+    const totalLabor = region.labor || 0
+    const idleLabor = region.Busylabor || 0 // 注意：变量名可能是 Busylabor，但通常代表空闲
+    const fixedLabor = region.laborAllocation || 0
+    // 计算繁忙劳动力 = 总劳动力 - 空闲劳动力
+    const workingLabor = Math.max(0, totalLabor - idleLabor) // 确保不为负数
+
       return `
 =====[地区劳动力]=====
-地区：${guildId}
-■总劳动力：未完成
-■繁忙劳动力：未完成
-■空闲劳动力：未完成
-■固定劳动力：未完成
+${username} 同志！
+■ 总劳动力：${totalLabor}
+■ 繁忙劳动力：${workingLabor}
+■ 空闲劳动力：${idleLabor}
+■ 固定劳动力：${fixedLabor}
 `.trim()
     })
 }
