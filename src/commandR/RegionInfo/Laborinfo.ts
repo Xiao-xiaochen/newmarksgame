@@ -47,7 +47,6 @@ ${username} 同志！
 ■ 总劳动力：${formatLabor(totalLabor)}万
 ■ 繁忙劳动力：${formatLabor(workingLabor)}万
 ■ 空闲劳动力：${formatLabor(idleLabor)}万
-■ 固定劳动力：${formatLabor(totalAllocatedLabor)}万
 `.trim()
     })
 }

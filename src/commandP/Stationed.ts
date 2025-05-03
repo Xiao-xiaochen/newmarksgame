@@ -5,7 +5,7 @@ import { Time } from 'koishi'; // 导入 Time 用于格式化时间
 // 用于存储待确认的驻扎请求 { userId: { regionId: string, timestamp: number } }
 const pendingStationConfirmations: Record<string, { regionId: string; timestamp: number }> = {};
 const STATION_TIMEOUT = 30 * 1000; // 确认超时时间：30秒
-const STATION_COOLDOWN = 3 * 24 * 60 * 60 * 1000; // 驻扎冷却时间：3天
+const STATION_COOLDOWN = 7 * 24 * 60 * 60 * 1000; // 驻扎冷却时间：3天
 
 export function Stationed(ctx: Context) {
   ctx.command('驻扎', '驻扎到当前群聊绑定的地区')

@@ -18,7 +18,7 @@ const resourceKeyToName = Object.fromEntries(
 
 
 export function MineCommand(ctx: Context) {
-  ctx.command('地区开采 <resourceType:string> <mineCount:number>', '分配地区矿场进行资源开采')
+  ctx.command('地区开采类型 <resourceType:string> <mineCount:number>', '分配地区矿场进行资源开采').alias('设置地区自动开采').alias('地区自动开采').alias('地区开采')
     .alias('开采')
     .action(async ({ session }, resourceType, mineCount) => {
       if (!session || !session.userId || !session.author) {

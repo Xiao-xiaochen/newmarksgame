@@ -1,13 +1,8 @@
 import 'koishi'
 
-// --- 新增：定义正在进行的建造项目结构 ---
-export interface OngoingConstruction {
-  type: string; // 建筑显示名称
-  key: keyof Region; // 对应 Region 的字段 key
-  remainingPoints: number; // 剩余所需建造点数
-  quantity: number; // 本次建造的数量
-}
-// --- 新增结束 ---
+// --- 移除：不再需要的 OngoingConstruction 接口 ---
+// export interface OngoingConstruction { ... }
+// --- 移除结束 ---
 
 
 // --- 系统配置 ---
@@ -153,9 +148,9 @@ export interface Country {
 
 // --- 地区数据 ---
 export interface Region {
-  // --- 修改：使用新的接口定义，并允许为 null ---
-  ongoingconstruction: OngoingConstruction | null;
-  // --- 修改结束 ---
+  // --- 移除：不再需要的 ongoingconstruction 字段 ---
+  // ongoingconstruction: OngoingConstruction | null;
+  // --- 移除结束 ---
   militaryIndustry: number;
   RegionId: string; // 地区ID (主键, e.g., "4604")
   guildId: string;  // 所属频道ID (如果需要区分不同服务器)
@@ -172,8 +167,8 @@ export interface Region {
   maxbase: number;    // 地区最大基础设施
 
   Department: number;           // 地区建筑部门数量 (不再是等级)
-  Constructioncapacity: number; // 地区每小时产生的建造力
-  constructionQueue?: string;   // 新增: 存储建造队列的 JSON 字符串
+  Constructioncapacity: number; // 地区累积的总建造力
+  // constructionQueue?: string;   // 移除: 不再使用建造队列
 
   // --- 建筑/设施数量 ---
   farms: number;        // 农场

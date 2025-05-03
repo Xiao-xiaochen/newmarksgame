@@ -202,11 +202,11 @@ export class RegionManager {
         TacticalBomber: 0,
         Transportaircraft: 0
       },
-      warehouseCapacity: 500,
-      militarywarehouseCapacity: 500,
+      warehouseCapacity: 300,
+      militarywarehouseCapacity: 300,
       OwarehouseCapacity: 0,
       OmilitarywarehouseCapacity: 0,
-      militaryIndustry: 0
+      militaryIndustry: 0,
     };
 
     return regionData;

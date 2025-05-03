@@ -38,8 +38,9 @@ export function SIInfo(ctx: Context) {
       const militaryIndustryCount = region.militaryIndustry || 0 // 军工厂
 
       return `
-[地区 ${region.RegionId} 第二产业信息]
-指挥官：${username}
+===[地区第二产业]===
+${username} 同志！
+地区编号： ${region.RegionId} 
 ■ 轻工业：${lightIndustryCount}
 ■ 建筑业：${constructionCount}
 ■ 重工业：${heavyIndustryCount} 

@@ -46,6 +46,9 @@ import { SteelmakingCommand } from './commandR/Steelmaking'; // <--- 导入钢�
 import { HourCheckIn } from './core/HourCheckIn'; // <--- 导入地区小时签到指令
 import { SIInfo } from './commandR/RegionInfo/SIInfo'; // <--- 导入SI信息指令
 import { RMineCheckIn } from './commandR/CheckIn/MineCheckIn'; // <--- 导入地区资源签到指令
+import { TraditionalSteelmakingCommand } from './commandR/TraditionalSteelmaking'; // <--- 导入传统钢铁制造指令
+import { BuildPowerInfo } from './commandR/RegionInfo/BuildPowerInfo'; // <--- 导入地区建造力指令
+import { DislaborCommand } from './commandR/Dislabor'; // <--- 导入取消分配劳动力指令
 
 
 
@@ -110,6 +113,9 @@ export function apply(ctx: Context) {
     HourCheckIn(ctx);        // 地区小时签到
     SIInfo(ctx);             // 查看SI信息
     RMineCheckIn(ctx);        // 地区资源签到
+    TraditionalSteelmakingCommand(ctx); // 传统钢铁制造指令
+    BuildPowerInfo(ctx);        // 查看地区建造力
+    DislaborCommand(ctx);      // 取消分配劳动力
 
     // --- 国家/势力相关 ---
     Buildcountry(ctx);      // 建立国家

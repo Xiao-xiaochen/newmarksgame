@@ -1,4 +1,5 @@
 import { Region } from '../types'; // 确认 types.ts 的相对路径
+import { TRandom } from '../utils/Random';
 
 // 定义建筑属性结构
 export interface BuildingDefinition {
@@ -47,7 +48,7 @@ export const BUILDINGS: Record<string, BuildingDefinition> = {
     buildCost: {
       //steel: 50,
       //concrete: 100,
-      constructionPoints: 1000, // 示例值
+      constructionPoints: 200, // 示例值
     },
     operation: {
       fixLabor: 10000, // 示例：每个部门需要 5000 固定劳动力
@@ -72,7 +73,7 @@ export const BUILDINGS: Record<string, BuildingDefinition> = {
       fixLabor: 10000,
       // 可能消耗其他资源，如电力（未来）或煤炭
       produces: {
-        goods: 50, // 示例：每小时产出 50 消费品 (对应 Region.warehouse.goods)
+        goods: 2, // 示例：每小时产出 50 消费品 (对应 Region.warehouse.goods)
       },
     },
     infrastructureCost: 1,
@@ -83,21 +84,39 @@ export const BUILDINGS: Record<string, BuildingDefinition> = {
     key: 'steelmill', // 对应 Region.steelmill
     description: '将铁矿石和煤炭转化为钢铁。',
     buildCost: {
-      steel: 100,
-      concrete: 150,
-      machinery: 30,
-      constructionPoints: 2000,
+      // steel: 100, // 移除直接钢铁消耗
+      concrete: 50, // 降低混凝土消耗
+      machinery: 5,  // 大幅降低机械消耗
+      constructionPoints: 1500, // 降低建造点数
     },
     operation: {
       fixLabor: 20000,
-      coal: -10, // 消耗 10 煤炭 (对应 Region.warehouse.coal)
-      ironOre: -15, // 消耗 15 铁矿石 (对应 Region.warehouse.ironOre)
+      coal: -1000, // 消耗 10 煤炭 (对应 Region.warehouse.coal)
+      ironOre: -2000, // 消耗 15 铁矿石 (对应 Region.warehouse.ironOre)
       // TODO: 实现可选燃料逻辑 (例如 Mazout 减少 coal 消耗并提高产量)
       produces: {
-        steel: 10, // 产出 10 钢铁 (对应 Region.warehouse.steel)
+        steel: TRandom(1000,1300,1600), // 产出 10 钢铁 (对应 Region.warehouse.steel)
       },
     },
     infrastructureCost: 2, // 炼钢厂消耗更多基建
+  },
+  // --- 新增：混凝土厂 ---
+  concretePlant: {
+      name: '混凝土厂',
+      key: 'concretePlant', // 对应 Region.concretePlant
+      description: '消耗石料生产混凝土。',
+      buildCost: {
+          steel: 20, // 少量钢铁
+          constructionPoints: 500,
+      },
+      operation: {
+          fixLabor: 10000,
+          stone: -2000, // 消耗 10 石料
+          produces: {
+              concrete: TRandom(1700,1800,1950), // 产出 10 混凝土
+          },
+      },
+      infrastructureCost: 1,
   },
   // --- 农场 ---
   farms: {
@@ -128,10 +147,10 @@ export const BUILDINGS: Record<string, BuildingDefinition> = {
       },
       operation: {
           fixLabor: 10000,
-          crudeOil: -20, // 消耗 20 原油 (对应 Region.warehouse.oil)
+          crudeOil: -2000, // 消耗 20 原油 (对应 Region.warehouse.oil)
           produces: {
-              fuel: 15, // 产出 15 燃料 (对应 Region.warehouse.fuel)
-              Mazout: 5, // 产出 5 重油 (对应 Region.warehouse.Mazout)
+              fuel: TRandom(1000,1250,1500), // 产出 15 燃料 (对应 Region.warehouse.fuel)
+              Mazout: TRandom(300,400,500), // 产出 5 重油 (对应 Region.warehouse.Mazout)
           },
       },
       infrastructureCost: 2,
@@ -148,7 +167,7 @@ export const BUILDINGS: Record<string, BuildingDefinition> = {
           fixLabor: 20000,
           // 主产出 (coal, ironOre) 应在小时更新逻辑中根据地区资源 (Region.resources) 决定
           produces: {
-              stone: 5, // 新增：每小时固定产出 5 石料 (示例值)
+              stone: TRandom( 2000 , 2500 , 3000 ), // 新增：每小时固定产出 5 石料 (示例值)
           }
       },
       infrastructureCost: 1,
@@ -225,8 +244,8 @@ export const BUILDINGS: Record<string, BuildingDefinition> = {
        key: 'machineryPlant', // 对应 Region.machineryPlant
        description: '消耗钢铁等资源生产机械。',
        buildCost: {
-           steel: 150,
-           concrete: 100, // 假设已有混凝土
+           steel: 120, // 降低钢铁消耗
+           concrete: 50, // 降低混凝土消耗
            constructionPoints: 2000,
        },
        operation: {

@@ -66,12 +66,17 @@ export function BindRegion(ctx: Context) {
         // --- 核心逻辑：首次绑定时添加初始资源和建筑 ---
         let initialSetupMessage = '';
         let gaveInitialResources = false;
-        // 检查 region.guildId 是否为空或是4位数，表示这是首次有效绑定
-        const isFirstBinding = !currentGuildId || /^\d{4}$/.test(String(currentGuildId));
+        // 检查 region.guildId 是否为空或是4位数，表示这是首次有效绑定 (旧逻辑注释掉)
+        // const isFirstBinding = !currentGuildId || /^\d{4}$/.test(String(currentGuildId));
 
-        if (isFirstBinding) {
+        // --- 修改后的逻辑 ---
+        // 检查关键数据（如 Department）是否存在且大于0，判断是否需要初始化
+        // 如果 Department 不存在或为0，则认为需要初始化
+        const needsInitialization = !region.Department || region.Department === 0;
+
+        if (needsInitialization) { // 使用新的检查逻辑
             gaveInitialResources = true; // 标记发放了初始资源
-            initialSetupMessage = '首次绑定，发放初始资源和建筑：';
+            initialSetupMessage = '首次绑定或需要初始化，发放初始资源和建筑：'; // 更新提示信息
             const updatedRegionData: Partial<Region> = {};
 
             // --- 修改：确保仓库对象包含所有必需的键 ---
@@ -104,7 +109,7 @@ export function BindRegion(ctx: Context) {
 
             // c. 初始矿场 (例如，数量是农田的一半左右，最少1个)
             const initialMines = Math.max(1, Math.floor(initialFarms * TRandom(0.4, 0.5, 0.6)));
-            // --- 修正：确保使用小写的 mines ---
+            // --- 修正：确保使用小写的 Mine ---
             updatedRegionData.Mine = initialMines;
             initialSetupMessage += `\n - 矿场: +${initialMines}`;
 
@@ -139,7 +144,7 @@ export function BindRegion(ctx: Context) {
             });
 
         } else {
-             // 如果不是首次绑定，只更新 guildId
+             // 如果不需要初始化，只更新 guildId
              await ctx.database.set('regiondata', { RegionId: regionId }, { guildId: guildId });
         }
 

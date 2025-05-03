@@ -87,9 +87,10 @@ export function GeneralBuild(ctx: Context) {
       const currentBase = region.base || 0;
       const maxBase = region.maxbase || 0;
       const availableInfrastructure = maxBase - currentBase; // 可用基建空间
+      const requiredConstructionPoints = buildingDef.buildCost.constructionPoints * quantity;
+      const currentConstructionCapacity = region.Constructioncapacity || 0;
 
       const missingResources: string[] = [];
-      // 检查逻辑不变
       if (currentSteel < requiredSteel) missingResources.push(`钢铁: ${requiredSteel - currentSteel}`);
       if (currentConcrete < requiredConcrete) missingResources.push(`混凝土: ${requiredConcrete - currentConcrete}`);
       if (currentMachinery < requiredMachinery) missingResources.push(`机械: ${requiredMachinery - currentMachinery}`);
@@ -102,69 +103,68 @@ export function GeneralBuild(ctx: Context) {
         return `基础设施空间不足！需要 ${requiredInfrastructure}，可用 ${availableInfrastructure} (当前 ${currentBase}/${maxBase})。请先建造更多“基础设施”。`;
       }
 
-      // --- 扣除资源和基础设施 ---
-      // updatedWarehouse 基于有完整结构的 currentWarehouse 创建，类型也是安全的
+      // --- 修改：检查建造力 --- 
+      if (currentConstructionCapacity < requiredConstructionPoints) {
+        return `建造力不足！需要 ${requiredConstructionPoints}，当前拥有 ${currentConstructionCapacity}。`;
+      }
+      // --- 修改结束 --- 
+
+      // --- 扣除资源、基础设施和建造力 --- 
       const updatedWarehouse = { ...currentWarehouse };
       updatedWarehouse.steel -= requiredSteel;
       updatedWarehouse.concrete -= requiredConcrete;
       updatedWarehouse.machinery -= requiredMachinery;
 
-      const updatedBase = currentBase + requiredInfrastructure; // 建筑消耗基建，增加已用基建
+      const updatedBase = currentBase + requiredInfrastructure;
+      const updatedConstructionCapacity = currentConstructionCapacity - requiredConstructionPoints;
 
-      // --- 更新建造队列 ---
-      let queue: ConstructionQueueItem[] = [];
+      // --- 修改：直接增加建筑数量 --- 
+      const buildingKey = buildingDef.key;
+      const currentBuildingCount = (region[buildingKey] as number) || 0;
+      const newBuildingCount = currentBuildingCount + quantity;
+      const updatePayload: Partial<Region> = {
+        warehouse: updatedWarehouse,
+        base: updatedBase,
+        Constructioncapacity: updatedConstructionCapacity,
+        [buildingKey]: newBuildingCount, // 直接更新建筑数量
+      };
+      // --- 修改结束 --- 
+
+      // --- 移除建造队列逻辑 --- 
+      // let queue: ConstructionQueueItem[] = [];
+      // try { ... } catch { ... }
+      // queue.push({ ... });
+      // const updatedQueueString = JSON.stringify(queue);
+      // --- 移除结束 --- 
+
+      // --- 更新数据库 --- 
       try {
-        if (region.constructionQueue) {
-          queue = JSON.parse(region.constructionQueue);
-        }
-      } catch (error) {
-        console.error(`Error parsing construction queue for region ${region.RegionId}:`, error);
-        // 可以选择返回错误或清空队列继续
-        // return '处理建造队列时出错，请联系管理员。';
-      }
-
-      // 检查队列长度限制 (可选)
-      // if (queue.length >= MAX_QUEUE_LENGTH) {
-      //   return `建造队列已满 (最大 ${MAX_QUEUE_LENGTH} 项)。`;
-      // }
-
-      queue.push({
-        type: buildingDef.name,
-        key: buildingDef.key,
-        remainingPoints: buildingDef.buildCost.constructionPoints,
-        quantity: quantity,
-      });
-
-      const updatedQueueString = JSON.stringify(queue);
-
-      // --- 更新数据库 ---
-      try {
-        await ctx.database.set('regiondata', { RegionId: region.RegionId }, {
-          warehouse: updatedWarehouse,
-          base: updatedBase,
-          constructionQueue: updatedQueueString,
-        });
+        // --- 修改：使用新的更新载荷，移除 constructionQueue --- 
+        await ctx.database.set('regiondata', { RegionId: region.RegionId }, updatePayload);
+        // --- 修改结束 --- 
       } catch (dbError) {
         console.error(`Database update error during build command for region ${region.RegionId}:`, dbError);
-        return '数据库更新失败，建造未开始，资源未扣除。请重试或联系管理员。'; // 最好能回滚或标记问题
+        return '数据库更新失败，建造未完成，资源未扣除。请重试或联系管理员。';
       }
 
-
-      // --- 返回成功信息 ---
+      // --- 返回成功信息 --- 
       const costDetails = [
         requiredSteel > 0 ? `钢铁 × ${requiredSteel}` : null,
         requiredConcrete > 0 ? `混凝土 × ${requiredConcrete}` : null,
         requiredMachinery > 0 ? `机械 × ${requiredMachinery}` : null,
-      ].filter(Boolean).join('\n'); // 过滤掉数量为0的资源
+      ].filter(Boolean).join('\n');
 
+      // --- 修改：调整反馈信息为即时完成 --- 
       return `
 =====[土木工程]=====
 ${username} 同志：
-■ ${quantity} 个 ${buildingDef.name} 已加入地区 ${region.RegionId} 的建造队列！
-□ 消耗资源：
+■ ${quantity} 个 ${buildingDef.name} 已在地区 ${region.RegionId} 建造完成！
+□ 消耗物资：
 ${costDetails || '无'}
 □ 消耗基础设施：${requiredInfrastructure} (当前 ${updatedBase}/${maxBase})
-□ 预计需要建造点数：${buildingDef.buildCost.constructionPoints * quantity}
+□ 消耗建造力：${requiredConstructionPoints} (剩余 ${updatedConstructionCapacity})
+□ ${buildingDef.name} 总数：${newBuildingCount}
 `.trim();
+      // --- 修改结束 ---
     });
 }

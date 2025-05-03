@@ -48,8 +48,9 @@ export function RegionPopulation(ctx: Context) {
     const FormalLabor = (region.labor / 10000).toFixed(2);
     
 return `
-===[地区 ${region.RegionId} 人口报告]===
-指挥官：${username}
+=====[地区人口]=====
+${username} 同志！
+地区编号：${region.RegionId} 
 ■ 地区人口：${FormalPopulation.toLocaleString()}万
 ■ 劳动人口：${FormalLabor.toLocaleString()}万
 □ 人口变化：${populationChangeInfo}

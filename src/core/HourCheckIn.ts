@@ -3,6 +3,7 @@ import { Region } from '../types';
 import { } from 'koishi-plugin-cron'; // 这行可以移除，因为 cron 是通过 Context 注入的
 // --- 修改：导入新增的函数和 BUILDINGS ---
 import { getBuildingDefinition, BUILDINGS } from './Buildings'; // 确保导入路径正确
+                  import { TRandom } from '../utils/Random'; // 导入 TRandom
 // --- 修改结束 ---
 
 
@@ -11,13 +12,13 @@ const FOOD_CONSUMPTION_PER_10K_CAPITA = 1; // 每万人每天消耗粮食
 const GOODS_CONSUMPTION_PER_10K_CAPITA = 0.5; // 每万人每天消耗消费品
 const FOOD_CONSUMPTION_PER_CAPITA = FOOD_CONSUMPTION_PER_10K_CAPITA / 10000; // 0.0001
 const GOODS_CONSUMPTION_PER_CAPITA = GOODS_CONSUMPTION_PER_10K_CAPITA / 10000; // 0.00005
-
+// 定义每座矿场的基础产出率 (石料除外，使用 TRandom)
+const BASE_MINE_OUTPUT_RATES_PER_MINE: Record<string, number> = {
+    coal: 2000, ironOre: 2000, /* oil: 40, */ rareMetal: 2000, rareEarth: 2000, aluminum: 2000, rubber: 15,
+    // oil 由 oilwell 产出, stone 使用 TRandom
+}
 const FARM_OUTPUT_PER_FARM = 3; // 需要确认这个值是否基于有效劳动力
 const LIGHT_INDUSTRY_OUTPUT_PER_INDUSTRY = 1; // 一个满劳动力轻工厂产出1生活消费品
-const MINE_OUTPUT_RATES: Record<string, number> = {
-    coal: 50, ironOre: 30, oil: 40, rareMetal: 5, rareEarth: 2, aluminum: 20, rubber: 15,
-    stone: 5, // 矿场副产物石料，需要确认是否在这里处理或在建筑定义里
-};
 const RESOURCE_NAMES: Record<string, string> = {
     food: '粮食', goods: '生活消费品', coal: '煤炭', ironOre: '铁矿石', oil: '原油',
     steel: '钢铁', rareMetal: '稀有金属', rareEarth: '稀土', aluminum: '铝', rubber: '橡胶',
@@ -71,8 +72,7 @@ export async function performHourlyUpdateLogic(ctx: Context) {
         const lightIndustryCount = region.lightIndustry || 0;
         const mineCount = region.Mine || 0;
         const constructionDepartments = region.Department || 0;
-        // const constructionQueueString = region.constructionQueue || '[]'; // 移除队列
-        let ongoingConstruction = region.ongoingconstruction || null; // 获取当前建造项目
+
 
         // --- 1. 生产计算 (需要考虑劳动力分配) ---
         let totalAllocatedLabor = 0; // 计算总共分配出去的劳动力
@@ -126,8 +126,8 @@ export async function performHourlyUpdateLogic(ctx: Context) {
                     // 计算该资源实际工作的矿场数
                     const workingMinesForResource = Math.floor(actualTotalWorkingMines * (allocatedCount / totalMinesAllocatedToResources));
                     if (workingMinesForResource > 0) {
-                        const outputRate = MINE_OUTPUT_RATES[resourceKey] || 0;
-                        const producedAmount = Math.floor(workingMinesForResource * outputRate);
+                        const outputRate = BASE_MINE_OUTPUT_RATES_PER_MINE[resourceKey] || 0; // 使用基础速率
+                        const producedAmount = Math.floor(workingMinesForResource * outputRate); // 产出 = 工作矿场数 * 速率
                         const maxExtractable = currentResources[resourceKey]; // 最多只能开采储量
                         const actualProduced = Math.min(producedAmount, maxExtractable);
 
@@ -139,9 +139,9 @@ export async function performHourlyUpdateLogic(ctx: Context) {
                     }
                 }
             }
-            // 计算石料产出 (所有工作的矿场都产出)
-            const stoneOutputRate = MINE_OUTPUT_RATES['stone'] || 5; // 从 MINE_OUTPUT_RATES 获取或用默认值
-            const stoneProduced = Math.floor(actualTotalWorkingMines * stoneOutputRate);
+            // 计算石料产出 (所有工作的矿场都产出，使用 TRandom)
+            // stone: TRandom( 2000 , 2500 , 3000 )
+            const stoneProduced = TRandom(2000, 2500, 3000, true) * actualTotalWorkingMines;
             if (stoneProduced > 0) {
                 currentWarehouse.stone = (currentWarehouse.stone || 0) + stoneProduced;
                 productionSummary['stone'] = (productionSummary['stone'] || 0) + stoneProduced;
@@ -201,6 +201,7 @@ export async function performHourlyUpdateLogic(ctx: Context) {
         // --- 4. 劳动力更新 ---
         const newTotalLabor = Math.floor(newPopulation * 0.6); // 总劳动力是新人口的60%
         // 重新计算实际能支持的总分配劳动力 (不能超过新的总劳动力)
+        // 注意：totalAllocatedLabor 是在生产计算步骤中累加的
         const effectiveTotalAllocatedLabor = Math.min(totalAllocatedLabor, newTotalLabor);
         const newIdleLabor = newTotalLabor - effectiveTotalAllocatedLabor; // 新的空闲劳动力
 
@@ -210,52 +211,32 @@ export async function performHourlyUpdateLogic(ctx: Context) {
         updatedRegionData.lastPopulationModifier = populationChangeRate; // 记录变化率
 
         // --- 5. 建造力计算与建造处理 ---
-        const constructionDeptLaborAllocated = laborAllocation['Department'] || 0;
-        const constructionDeptBuildingDef = getBuildingDefinition('constructionDepartment');
-        const requiredLaborPerDept = constructionDeptBuildingDef?.operation?.fixLabor || 10000;
-        const capacityPerDept = constructionDeptBuildingDef?.operation?.produces?.constructionCapacity || 200;
-        const maxWorkingDepts = Math.floor(constructionDeptLaborAllocated / requiredLaborPerDept);
-        const actualWorkingDepts = Math.min(constructionDepartments, maxWorkingDepts);
+        // --- 修改：根据分配的劳动力计算实际工作的建筑部门数量 ---
+        const constructionDeptLaborAllocated = laborAllocation['Department'] || 0; // 获取分配给建筑部门的总劳动力
+        const constructionDeptBuildingDef = getBuildingDefinition('Department'); // 使用 key 'Department' 获取定义
+        const requiredLaborPerDept = constructionDeptBuildingDef?.operation?.fixLabor || 10000; // 每个部门需要的劳动力
+        const capacityPerDept = constructionDeptBuildingDef?.operation?.produces?.constructionCapacity || 200; // 每个部门的产能
+
+        // 计算理论上可以支持多少个部门工作
+        const maxWorkingDeptsByLabor = Math.floor(constructionDeptLaborAllocated / requiredLaborPerDept);
+        // 实际工作的部门数量不能超过总部门数，也不能超过劳动力支持的数量
+        const actualWorkingDepts = Math.min(constructionDepartments, maxWorkingDeptsByLabor);
+
         const hourlyConstructionCapacity = actualWorkingDepts * capacityPerDept; // 本小时产生的建造力
+        // --- 修改结束 ---
 
-        let constructionReport = '空闲'; // 建造报告信息
-        let remainingCapacity = hourlyConstructionCapacity; // 可用建造力
+        // --- 修改：累积建造力 --- 
+        const currentConstructionCapacity = region.Constructioncapacity || 0;
+        const newTotalConstructionCapacity = currentConstructionCapacity + hourlyConstructionCapacity;
+        updatedRegionData.Constructioncapacity = newTotalConstructionCapacity; // 存储累积的总建造力
+        // --- 修改结束 --- 
 
-        if (ongoingConstruction) {
-            const pointsToApply = Math.min(remainingCapacity, ongoingConstruction.remainingPoints);
-            ongoingConstruction.remainingPoints -= pointsToApply;
-            remainingCapacity -= pointsToApply; // 消耗建造力
-
-            if (ongoingConstruction.remainingPoints <= 0) {
-                // 建造完成
-                const buildingKey = ongoingConstruction.key;
-
-                if (typeof region[buildingKey] === 'number') {
-                    const currentCount = (region[buildingKey] as number) || 0;
-                    const newValue: number = currentCount + ongoingConstruction.quantity;
-                    (updatedRegionData as any)[buildingKey] = newValue;
-                    // --- 重要：更新临时状态以用于 base 计算 ---
-                    // 现在 tempRegionStateForBaseCalc 已经在外部初始化了
-                    (tempRegionStateForBaseCalc as any)[buildingKey] = newValue; // 恢复 as any
-                    // --- 更新结束 ---
-                    constructionReport = `${ongoingConstruction.quantity}个 ${ongoingConstruction.type} 建造完成！`;
-                } else {
-                    console.error(`[结算错误] 地区 ${regionId}: 尝试更新非数字建筑字段 ${buildingKey}`);
-                    constructionReport = `⚠️ 建造完成但无法更新: 字段 "${buildingKey}" 不是数字类型`;
-                }
-
-                ongoingConstruction = null; // 清空进行中的项目
-            } else {
-                // 建造未完成
-                constructionReport = `${ongoingConstruction.type} (${ongoingConstruction.remainingPoints}点剩余)`;
-            }
-            updatedRegionData.ongoingconstruction = ongoingConstruction; // 更新或清空进行中的项目
-        }
-
-        // 存储本小时刷新后 *剩余* 的建造力 (如果“即取即用”是指命令可以消耗的话)
-        // 或者存储 *总共* 刷新的建造力 (如果命令只能在下个周期开始前使用)
-        // 按照用户描述“下个小时建造力刷新了，再建一下”，倾向于存储刷新值
-        updatedRegionData.Constructioncapacity = hourlyConstructionCapacity; // 存储本小时 *总共* 产生的建造力
+        // --- 移除旧的建造队列和进行中项目处理逻辑 --- 
+        // let constructionReport = '空闲'; // 建造报告信息
+        // let remainingCapacity = hourlyConstructionCapacity; // 可用建造力
+        // if (ongoingConstruction) { ... } // 移除整个 if 块
+        // updatedRegionData.ongoingconstruction = ongoingConstruction; // 移除
+        // --- 移除结束 ---
 
         // --- 6. 更新仓库 ---
         // 确保 warehouse 对象被更新
@@ -276,10 +257,11 @@ export async function performHourlyUpdateLogic(ctx: Context) {
         reportMessages.push(''); // 空行
         reportMessages.push(`□总劳动力:  ${(newTotalLabor / 10000).toFixed(2)}万`);
         reportMessages.push(`■空闲劳动力：${newIdleLabor}`); // 显示正确的空闲劳动力
-        reportMessages.push(`■劳动力信息已刷新！`);
-        reportMessages.push(`□总建造力: ${hourlyConstructionCapacity}`); // 显示本小时产生的总建造力
+        reportMessages.push(`■劳动力已增加！`);
+        reportMessages.push(`□当前总建造力: ${updatedRegionData.Constructioncapacity}`); // 显示累积的总建造力
+        reportMessages.push(`■本小时增加建造力: ${hourlyConstructionCapacity}`);
         reportMessages.push(`■建造力信息已刷新！`);
-        reportMessages.push(`■建造状态: ${constructionReport}`); // 显示建造状态
+        // reportMessages.push(`■建造状态: ${constructionReport}`); // 移除建造状态显示
 
         // 添加生产和消耗总结 (可选)
         const productionText = Object.entries(productionSummary)
@@ -367,17 +349,17 @@ function calculatePopulationModifier(foodSupplyPercent: number, goodsSupplyPerce
     }
     // else: 80%及以上无惩罚
 
-    // 生活消费品供给修正
+    // 生活消费品供给修正 (只加不减)
     let goodsModifier = 0;
-    if (goodsSupplyPercent < 30) {
-        goodsModifier = -0.005; // -0.5%
-    } else if (goodsSupplyPercent >= 30 && goodsSupplyPercent < 50) {
-        goodsModifier = 0; // 无修正
-    } else if (goodsSupplyPercent >= 50 && goodsSupplyPercent < 80) {
-        goodsModifier = 0.005; // +0.5%
-    } else if (goodsSupplyPercent >= 80) {
+    // 低于100%时无影响
+    if (goodsSupplyPercent >= 100) {
+        // 达到或超过100%时提供加成，例如1%
         goodsModifier = 0.01; // +1%
     }
+    // 可以根据需要调整加成的具体数值和条件，例如分档次
+    // else if (goodsSupplyPercent >= 80) { // 示例：80%-100%提供0.5%加成
+    //     goodsModifier = 0.005;
+    // }
 
     // 特别机制：粮食供应率小于80%时，忽略生活消费品给予的正人口修正
     if (foodSupplyPercent < 80 && goodsModifier > 0) {

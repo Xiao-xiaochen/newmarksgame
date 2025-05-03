@@ -99,9 +99,6 @@ export function Database(ctx: Context) {
   })
 
   ctx.model.extend('regiondata', {
-    // --- 修改：添加 initial: null ---
-    ongoingconstruction: { type: 'json', initial: null }, // 正在建造的建筑
-    // --- 修改结束 ---
     // --- 基础信息 ---
     RegionId: { type: 'string', length: 255 }, // 地区ID (e.g., "4604")
     guildId: { type: 'string', length: 255, nullable: true }, // 绑定的频道ID
@@ -122,7 +119,6 @@ export function Database(ctx: Context) {
     // --- 建筑与产能 ---
     Department: { type: 'unsigned', initial: 0 }, // 建筑部门
     Constructioncapacity: { type: 'unsigned', initial: 0 }, // 当前建造力
-    constructionQueue: { type: 'text', initial: '[]' }, // <--- Add this line
     farms: { type: 'unsigned', initial: 0 },
     mfactory: { type: 'unsigned', initial: 0 },
     busymfactory: { type: 'unsigned', initial: 0 },
