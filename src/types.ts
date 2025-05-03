@@ -1,8 +1,19 @@
 import 'koishi'
 
+// --- 新增：定义正在进行的建造项目结构 ---
+export interface OngoingConstruction {
+  type: string; // 建筑显示名称
+  key: keyof Region; // 对应 Region 的字段 key
+  remainingPoints: number; // 剩余所需建造点数
+  quantity: number; // 本次建造的数量
+}
+// --- 新增结束 ---
+
+
 // --- 系统配置 ---
 export interface System {
   LastResetDate: string;
+  lastCheckInDate: string;
 }
 
 // 声明 Koishi 数据库模型
@@ -142,6 +153,10 @@ export interface Country {
 
 // --- 地区数据 ---
 export interface Region {
+  // --- 修改：使用新的接口定义，并允许为 null ---
+  ongoingconstruction: OngoingConstruction | null;
+  // --- 修改结束 ---
+  militaryIndustry: number;
   RegionId: string; // 地区ID (主键, e.g., "4604")
   guildId: string;  // 所属频道ID (如果需要区分不同服务器)
   owner: string;    // 控制者 (国家名称 或 null)
@@ -233,6 +248,7 @@ export interface Region {
   };
 
   Terrain: TerrainType; // 地区地形
+  lastPopulationModifier?: number; // 存储上一次人口修改的时间戳
 }
 
 // --- 配置项 ---

@@ -87,12 +87,12 @@ ${username} 同志！
 ===[地区资源储量]===
 地区编号：${regiondata.guildId}
 资源单位：（吨）
-■稀土资源：${format(regiondata.resources.rareEarth) || '0' }
-■稀有金属：${format(regiondata.resources.rareMetal) || '0'}
-■铁矿：${format(regiondata.resources.ironOre) || '0'}
-■煤矿：${format(regiondata.resources.coal) || '0'}
-■铝矿：${format(regiondata.resources.aluminum) || '0'}
-■原油：${format(regiondata.resources.oil) || '0'}
+■稀土资源：${format(regiondata.resources.rareEarth) || 0 }
+■稀有金属：${format(regiondata.resources.rareMetal) || 0 }
+■铁矿：${format(regiondata.resources.ironOre) || 0 }
+■煤矿：${format(regiondata.resources.coal) || 0 }
+■铝矿：${format(regiondata.resources.aluminum) || 0 }
+■原油：${format(regiondata.resources.oil)}
 `.trim();
 
       } catch (error) {

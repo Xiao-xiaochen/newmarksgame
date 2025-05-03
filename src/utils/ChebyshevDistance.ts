@@ -1,5 +1,5 @@
 
-function calculateDistance(regionId1: string, regionId2: string): number {
+export function calculateDistance(regionId1: string, regionId2: string): number {
     if (!/^\d{4}$/.test(regionId1) || !/^\d{4}$/.test(regionId2)) {
       // Handle invalid IDs, maybe return Infinity or throw an error
       return Infinity;

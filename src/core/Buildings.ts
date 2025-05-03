@@ -45,15 +45,14 @@ export const BUILDINGS: Record<string, BuildingDefinition> = {
     key: 'Department', // 对应 Region.Department
     description: '提供建造力，加速地区建设。',
     buildCost: {
-      steel: 50,
-      concrete: 100,
-      machinery: 10,
+      //steel: 50,
+      //concrete: 100,
       constructionPoints: 1000, // 示例值
     },
     operation: {
       fixLabor: 10000, // 示例：每个部门需要 5000 固定劳动力
       produces: {
-        constructionCapacity: 100, // 示例：每小时提供 100 建造力
+        constructionCapacity: 200, // 示例：每小时提供 100 建造力
       },
     },
     infrastructureCost: 1, // 示例：消耗 1 点基础设施
@@ -106,14 +105,12 @@ export const BUILDINGS: Record<string, BuildingDefinition> = {
       key: 'farms', // 对应 Region.farms
       description: '生产粮食。',
       buildCost: {
-          steel: 10,
-          concrete: 50,
           constructionPoints: 200,
       },
       operation: {
           fixLabor: 10000, // 农业需要大量劳动力
           produces: {
-              food: 100, // 示例产量 (对应 Region.warehouse.food)
+              food: 3, // 示例产量 (对应 Region.warehouse.food)
           },
       },
       infrastructureCost: 1,
@@ -229,8 +226,7 @@ export const BUILDINGS: Record<string, BuildingDefinition> = {
        description: '消耗钢铁等资源生产机械。',
        buildCost: {
            steel: 150,
-           concrete: 100, // 假设已有
-           machinery: 50,  // 建造自身也需要机械 (需要初始资源)
+           concrete: 100, // 假设已有混凝土
            constructionPoints: 2000,
        },
        operation: {

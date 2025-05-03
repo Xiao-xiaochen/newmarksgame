@@ -5,8 +5,8 @@ import { Context } from 'koishi'
 import { Region } from '../../types' // 导入 Region 类型
 
 // 从 HourCheckIn.ts 或配置文件中获取/定义消耗率 (这里为了简单重新定义)
-const FOOD_CONSUMPTION_PER_CAPITA = 1;    // 每人每小时(天)消耗粮食
-const GOODS_CONSUMPTION_PER_CAPITA = 0.5; // 每人每小时(天)消耗消费品
+const FOOD_CONSUMPTION_PER_CAPITA = 0.0001;    // 每人每小时(天)消耗粮食
+const GOODS_CONSUMPTION_PER_CAPITA = 0.00005; // 每人每小时(天)消耗消费品
 
 export function RegionPopulation(ctx: Context) {
   ctx.command('查看地区人口')
@@ -32,24 +32,28 @@ export function RegionPopulation(ctx: Context) {
 
     // --- 提取人口和劳动力数据 ---
     const currentPopulation = region.population || 0
-    const totalLabor = region.labor || 0 // 总劳动力
 
     // --- 计算民生需求 ---
     // 使用 Math.ceil 确保即使人口很少也有需求，或者根据你的规则调整
     const foodNeeded = Math.ceil(currentPopulation * FOOD_CONSUMPTION_PER_CAPITA)
     const goodsNeeded = Math.ceil(currentPopulation * GOODS_CONSUMPTION_PER_CAPITA)
 
-    // --- 人口变化率 (暂时简化) ---
-    // 精确的变化率需要读取上小时的供应数据，这里仅作占位或显示基础信息
-    const populationChangeInfo = "变化率依赖于资源供应" // 或者可以显示一个基础增长率？
+    // --- 读取上次结算的人口变化率 ---
+    const lastModifier = region.lastPopulationModifier ?? 0; // 从数据库读取，如果不存在则为0
+    // 将修正系数转换为百分比字符串，保留两位小数
+    const populationChangePercent = (lastModifier * 100).toFixed(2);
+    const populationChangeInfo = `${lastModifier >= 0 ? '+' : ''}${populationChangePercent}% / 小时`; // 游戏内每小时即为一天
 
-      return `
+    const FormalPopulation = (region.population / 10000).toFixed(2);
+    const FormalLabor = (region.labor / 10000).toFixed(2);
+    
+return `
 ===[地区 ${region.RegionId} 人口报告]===
 指挥官：${username}
-■ 地区人口：${currentPopulation.toLocaleString()}
-■ 劳动人口：${totalLabor.toLocaleString()}
+■ 地区人口：${FormalPopulation.toLocaleString()}万
+■ 劳动人口：${FormalLabor.toLocaleString()}万
 □ 人口变化：${populationChangeInfo}
-■ 民生需求 (每小时/天)：
+■ 民生需求 (每小时)：
 □ 粮食: ${foodNeeded.toLocaleString()}
 □ 生活消费品：${goodsNeeded.toLocaleString()}
 `.trim()

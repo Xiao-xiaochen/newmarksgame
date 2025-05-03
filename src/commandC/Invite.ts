@@ -1,5 +1,6 @@
 import { Context, Session, h, Time } from 'koishi';
 import { Country, userdata, Region, TerrainType } from '../types';
+import { calculateDistance } from '../utils/ChebyshevDistance'; // 导入计算距离的函数
 
 // --- 临时邀请存储 ---
 // 使用 Map 存储待处理的邀请: Map<targetUserId, { inviterId: string, inviterName: string, countryName: string, timestamp: number }>

@@ -7,6 +7,8 @@ import { Database } from "./models";
 import { setupDailyReset } from "./core/DayCheckIn"; // 注意：原为 CheckIn.ts，这里假设是 DayCheckIn.ts
 import { UserReset } from './core/UserReset';
 import { CountryReset } from './core/CountryReset'; // <--- 导入新命令
+import { ManualCheckIn } from './commandP/ManualCheckIn'; // <--- 导入手动重置指令
+import { HelpCommand } from './utils/help'; // <--- 导入帮助指令
 
 // --- 地图相关 ---
 import { InitializeRegions } from './core/Map/Command/InitializeRegions';
@@ -42,6 +44,8 @@ import { LaborCommand } from './commandR/Labor'; // <--- 导入劳动力指令
 import { RefineOilCommand } from './commandR/RefineOil'; // <--- 导入精炼油指令
 import { SteelmakingCommand } from './commandR/Steelmaking'; // <--- 导入钢铁制造指令
 import { HourCheckIn } from './core/HourCheckIn'; // <--- 导入地区小时签到指令
+import { SIInfo } from './commandR/RegionInfo/SIInfo'; // <--- 导入SI信息指令
+import { RMineCheckIn } from './commandR/CheckIn/MineCheckIn'; // <--- 导入地区资源签到指令
 
 
 
@@ -58,7 +62,7 @@ import { ChangenName} from './commandC/ChangenName'; // <--- 国家改名指令
 import { ForceChangenName } from "./commandC/ForceChangenName";
 
 export const inject = {
-  required: ['database', 'puppeteer']
+  required: ['database', 'puppeteer', 'cron']
 }
 
 export function apply(ctx: Context) {
@@ -68,6 +72,8 @@ export function apply(ctx: Context) {
     setupDailyReset(ctx); // 每日重置
     UserReset(ctx);       // 用户数据重置
     CountryReset(ctx);    // 国家数据重置 <--- 添加注册
+    ManualCheckIn(ctx);    // 手动重置
+    HelpCommand(ctx);    // 帮助指令
 
     // --- 地图相关 ---
     ctx.plugin(InitializeRegions); // 初始化地区
@@ -102,6 +108,8 @@ export function apply(ctx: Context) {
     RefineOilCommand(ctx);    // 精炼油
     SteelmakingCommand(ctx);    // 钢铁制造
     HourCheckIn(ctx);        // 地区小时签到
+    SIInfo(ctx);             // 查看SI信息
+    RMineCheckIn(ctx);        // 地区资源签到
 
     // --- 国家/势力相关 ---
     Buildcountry(ctx);      // 建立国家
@@ -114,11 +122,12 @@ export function apply(ctx: Context) {
     Dismisscountry(ctx);     // 解散国家
     ChangenName(ctx);         // 国家改名
     ForceChangenName(ctx);   // 强制国家改名
-
     // --- 移除或待整理的旧指令 (注释掉) ---
     // ProduceTank(ctx)
     // ProduceInfantryEquipment(ctx)
 }
+
+//
 
 
 

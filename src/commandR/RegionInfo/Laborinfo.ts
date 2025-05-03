@@ -26,18 +26,28 @@ export function Laborinfo(ctx: Context) {
 
     // --- 提取劳动力数据 ---
     const totalLabor = region.labor || 0
-    const idleLabor = region.Busylabor || 0 // 注意：变量名可能是 Busylabor，但通常代表空闲
-    const fixedLabor = region.laborAllocation || 0
-    // 计算繁忙劳动力 = 总劳动力 - 空闲劳动力
-    const workingLabor = Math.max(0, totalLabor - idleLabor) // 确保不为负数
+    // Busylabor 字段现在代表空闲劳动力
+    const idleLabor = region.Busylabor || 0
+    const laborAllocation = region.laborAllocation || {} // 获取劳动力分配对象
 
-      return `
+    // --- 计算总的固定（已分配）劳动力 ---
+    const totalAllocatedLabor = Object.values(laborAllocation).reduce((sum, count) => sum + (count || 0), 0);
+
+    // 计算繁忙劳动力 = 总劳动力 - 空闲劳动力
+    // 注意：理论上 totalLabor 应该等于 totalAllocatedLabor + idleLabor
+    // 但为了防止数据不一致导致负数，这里用 max(0, ...)
+    const workingLabor = Math.max(0, totalLabor - idleLabor)
+
+    // --- 格式化输出 ---
+    const formatLabor = (value: number) => (value / 10000).toFixed(2);
+
+    return `
 =====[地区劳动力]=====
 ${username} 同志！
-■ 总劳动力：${totalLabor}
-■ 繁忙劳动力：${workingLabor}
-■ 空闲劳动力：${idleLabor}
-■ 固定劳动力：${fixedLabor}
+■ 总劳动力：${formatLabor(totalLabor)}万
+■ 繁忙劳动力：${formatLabor(workingLabor)}万
+■ 空闲劳动力：${formatLabor(idleLabor)}万
+■ 固定劳动力：${formatLabor(totalAllocatedLabor)}万
 `.trim()
     })
 }

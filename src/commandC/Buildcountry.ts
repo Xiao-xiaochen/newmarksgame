@@ -4,6 +4,7 @@ import { Context, Random, User, Time } from 'koishi' // 导入 Time
 import { WorldMap } from '../core/Map/MapCore'; // 导入 WorldMap
 import { Region, TerrainType, userdata } from '../types'; // 导入 userdata 类型
 import { validateCountryName } from '../utils/Namecheck'; // 导入国家名称验证函数
+import { calculateDistance } from '../utils/ChebyshevDistance'; // 导入计算距离的函数
 
 // --- 新增：建国冷却时间 (例如：24小时) ---
 const BUILD_COUNTRY_COOLDOWN = 72 * Time.hour; // 单位：毫秒
