@@ -18,6 +18,7 @@ declare module 'koishi' {
     userdata: userdata;
     country: Country;
     regiondata: Region; // 注意表名通常是小写
+    army: Army; // <--- 确认 army 表已存在
     // 可以添加配置表，如 military_item_config, power_plant_config
   }
 }
@@ -148,6 +149,7 @@ export interface Country {
 
 // --- 地区数据 ---
 export interface Region {
+  factoryAllocation: {};
   // --- 移除：不再需要的 ongoingconstruction 字段 ---
   // ongoingconstruction: OngoingConstruction | null;
   // --- 移除结束 ---
@@ -244,7 +246,35 @@ export interface Region {
 
   Terrain: TerrainType; // 地区地形
   lastPopulationModifier?: number; // 存储上一次人口修改的时间戳
+  // garrisonedArmyIds?: string[]; // 考虑是否需要直接存储驻军ID列表，或者通过查询 army 表实现
 }
+
+// --- 军队数据 ---
+export interface Army {
+  armyId: string; // 唯一ID (例如: RegionId + 序号, 11451)
+  name: string;   // 军队名称 (例如: 1145第一军)
+  commanderId: string; // 指挥官用户ID
+  regionId: string; // 当前所在地区ID
+
+  manpower: number; // 兵力数量
+  equipment: Partial<Record<keyof userdata['militarywarehouse'], number>>; // 装备及其数量
+  foodSupply: number; // 携带的粮食
+  organization?: number; // <--- 新增：军队总组织度
+
+  status: ArmyStatus; // 当前状态 (驻扎, 行军, 战斗)
+
+  // 行军相关
+  targetRegionId?: string; // 行军目标地区ID
+  marchEndTime?: number;   // 行军预计到达时间 (时间戳)
+}
+
+export enum ArmyStatus {
+  GARRISONED = '驻扎中',
+  MARCHING = '行军中',
+  FIGHTING = '战斗中',
+  // 可以添加更多状态, 如 REORGANIZING (整顿中), SIEGING (围攻中)
+}
+
 
 // --- 配置项 ---
 
@@ -279,3 +309,10 @@ export interface PowerPlantConfig {
 }
 
 // Wangyisheng (这个注释似乎是开发者签名，保留)
+export interface TerrainStatModifiers {
+  attack?: number; // 攻击修正 (百分比, e.g., -0.1 for -10%)
+  defense?: number; // 防御修正
+  breakthrough?: number; // 突破修正
+  marchSpeed?: number; // 行军速度修正 (百分比, e.g., -0.5 for 50% slower)
+  // 未来可以添加其他修正，如隐蔽、补给消耗等
+}

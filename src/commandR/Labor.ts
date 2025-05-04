@@ -3,8 +3,8 @@ import { Region, userdata } from '../types'; // 导入类型
 import { BUILDINGS, BuildingDefinition, getBuildingDefinitionByName } from '../core/Buildings'; // 导入建筑定义
 
 // 允许分配劳动力的建筑类型名称列表
-// --- 修改：添加“建筑部门”到允许分配的列表 ---
-const ALLOCATABLE_BUILDING_NAMES = ['农场', '轻工厂', '矿场', '建筑部门', '炼钢厂', '混凝土厂', '机械厂', '炼油厂', '油井']; // 根据需要添加更多可分配的建筑
+// --- 修改：移除 '炼钢厂', '混凝土厂', '机械厂', '炼油厂' --- 
+const ALLOCATABLE_BUILDING_NAMES = ['农场', '轻工厂', '矿场', '建筑部门', '油井']; // 根据需要添加更多可分配的建筑
 // --- 修改结束 ---
 
 // 辅助函数：获取建筑定义对应的 key

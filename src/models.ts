@@ -1,5 +1,7 @@
 import { Context } from 'koishi'
-import { Region, userdata, Country, System, TerrainType } from './types' // 确保导入 TerrainType
+// --- 修改：导入 Army 和 ArmyStatus ---
+import { Region, userdata, Country, System, TerrainType, Army, ArmyStatus } from './types'
+// --- 修改结束 ---
 
 declare module 'koishi' {
   interface Tables {
@@ -7,6 +9,7 @@ declare module 'koishi' {
     regiondata: Region;
     country: Country;
     system: System;
+    army: Army; // <--- 添加 army 表声明
   }
 }
 
@@ -166,6 +169,41 @@ export function Database(ctx: Context) {
     // --- 地形 ---
     Terrain: { type: 'string', length: 255, initial: TerrainType.PLAIN }, // 使用枚举的默认值
     lastPopulationModifier: { type: 'integer', initial: 0 }, // 上次人口修改的时间戳
+    // garrisonedArmyIds: { type: 'json', initial: [] }, // 考虑是否需要，暂时不加
+    factoryAllocation: { type: 'json' },
+  }, {
+    primary: 'RegionId',
+  });
+  // --- 新增：army 表定义 ---
+  ctx.model.extend('army', {
+    armyId: { type: 'string', length: 255 }, // 主键, e.g., "11451"
+    name: { type: 'string', length: 255 },   // e.g., "1145第一军"
+    commanderId: { type: 'string', length: 255 }, // 指挥官 UserID
+    regionId: { type: 'string', length: 255 },   // 当前所在地区 ID
+    manpower: { type: 'unsigned', initial: 0 }, // 兵力
+    equipment: { type: 'json', initial: {} },   // 装备 JSON 对象
+    foodSupply: { type: 'unsigned', initial: 0 }, // 携带粮食
+    status: { type: 'string', length: 50, initial: ArmyStatus.GARRISONED }, // 状态
+    targetRegionId: { type: 'string', length: 255, nullable: true }, // 行军目标，允许为空
+    marchEndTime: { type: 'unsigned', initial: 0 }, // 行军结束时间戳
+    organization: { type: 'unsigned', initial: 0 }, // 新增：军队总组织度
+  }, {
+    primary: 'armyId',
+    // 可以考虑为 regionId 和 commanderId 添加索引以优化查询
+    // foreignKeys: {
+    //   regionId: { table: 'regiondata', key: 'RegionId' },
+    //   commanderId: { table: 'userdata', key: 'userId' },
+    // }
+  });
+  // --- 新增结束 ---
+
+  ctx.model.extend('regiondata', {
+    // ... existing fields ...
+
+    // --- 地形 ---
+    Terrain: { type: 'string', length: 255, initial: TerrainType.PLAIN }, // 使用枚举的默认值
+    lastPopulationModifier: { type: 'integer', initial: 0 }, // 上次人口修改的时间戳
+    // garrisonedArmyIds: { type: 'json', initial: [] }, // 考虑是否需要，暂时不加
   }, {
     primary: 'RegionId',
   });

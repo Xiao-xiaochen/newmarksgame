@@ -3,7 +3,9 @@ import { Region, userdata } from '../types'; // 导入类型
 import { BUILDINGS, BuildingDefinition, getBuildingDefinitionByName } from '../core/Buildings'; // 导入建筑定义
 
 // 允许分配/取消分配劳动力的建筑类型名称列表 (与 Labor.ts 保持一致)
-const ALLOCATABLE_BUILDING_NAMES = ['农场', '轻工厂', '矿场', '建筑部门', '炼钢厂', '混凝土厂', '机械厂', '炼油厂', '油井'];
+// --- 修改：移除 '炼钢厂', '混凝土厂', '机械厂', '炼油厂' --- 
+const ALLOCATABLE_BUILDING_NAMES = ['农场', '轻工厂', '矿场', '建筑部门', '油井'];
+// --- 修改结束 ---
 
 // 辅助函数：获取建筑定义对应的 key
 function getBuildingKeyByName(name: string): keyof Region | null {

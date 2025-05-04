@@ -207,6 +207,7 @@ export class RegionManager {
       OwarehouseCapacity: 0,
       OmilitarywarehouseCapacity: 0,
       militaryIndustry: 0,
+      factoryAllocation: undefined
     };
 
     return regionData;

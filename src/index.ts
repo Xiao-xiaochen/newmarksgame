@@ -9,6 +9,7 @@ import { UserReset } from './core/UserReset';
 import { CountryReset } from './core/CountryReset'; // <--- 导入新命令
 import { ManualCheckIn } from './commandP/ManualCheckIn'; // <--- 导入手动重置指令
 import { HelpCommand } from './utils/help'; // <--- 导入帮助指令
+import { handleArmyArrival } from './core/ArmyActions'; // <--- 导入军队到达处理函数
 
 // --- 地图相关 ---
 import { InitializeRegions } from './core/Map/Command/InitializeRegions';
@@ -49,6 +50,13 @@ import { RMineCheckIn } from './commandR/CheckIn/MineCheckIn'; // <--- 导入地
 import { TraditionalSteelmakingCommand } from './commandR/TraditionalSteelmaking'; // <--- 导入传统钢铁制造指令
 import { BuildPowerInfo } from './commandR/RegionInfo/BuildPowerInfo'; // <--- 导入地区建造力指令
 import { DislaborCommand } from './commandR/Dislabor'; // <--- 导入取消分配劳动力指令
+import { FormArmy } from './commandA/FormArmy'; // <--- 导入组建军队指令
+import { AllocateManpowerToArmy } from './commandA/AllocateManpowerToArmy'; // <--- 分配劳动力到军队指令
+import { ArmArmy } from './commandA/ArmArmy'; // <--- 组建军队指令
+import { DistributeGuns } from './commandA/DistributeGuns'; // <--- 分配武器指令
+import { MarchArmy } from './commandA/MarchArmy'; // <--- 行军指令
+import { ViewArmy } from './commandA/ViewArmy'; // <--- 查看军队指令
+
 
 
 
@@ -63,6 +71,7 @@ import { ExitCountry } from './commandC/ExitCountry'; // <--- 退出国家指令
 import { Dismisscountry } from './commandC/Dismisscountry'; // <--- 解散国家指令
 import { ChangenName} from './commandC/ChangenName'; // <--- 国家改名指令
 import { ForceChangenName } from "./commandC/ForceChangenName";
+ import { ManufactureCommand } from './commandR/Manufacture';
 
 export const inject = {
   required: ['database', 'puppeteer', 'cron']
@@ -116,6 +125,12 @@ export function apply(ctx: Context) {
     TraditionalSteelmakingCommand(ctx); // 传统钢铁制造指令
     BuildPowerInfo(ctx);        // 查看地区建造力
     DislaborCommand(ctx);      // 取消分配劳动力
+    FormArmy(ctx);
+    AllocateManpowerToArmy(ctx); // 分配劳动力到军队
+    ArmArmy(ctx);
+    DistributeGuns(ctx);
+    MarchArmy(ctx);
+    ViewArmy(ctx); // 查看军队
 
     // --- 国家/势力相关 ---
     Buildcountry(ctx);      // 建立国家
@@ -131,6 +146,7 @@ export function apply(ctx: Context) {
     // --- 移除或待整理的旧指令 (注释掉) ---
     // ProduceTank(ctx)
     // ProduceInfantryEquipment(ctx)
+    ManufactureCommand(ctx);
 }
 
 //

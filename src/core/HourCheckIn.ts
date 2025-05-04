@@ -305,12 +305,12 @@ export async function performHourlyUpdateLogic(ctx: Context) {
         if (guildId && typeof guildId === 'string' && guildId.length >= 4) {
              const channelIdWithPlatform = `onebot:${guildId}`; // 根据你的 Koishi 配置调整平台前缀
              ctx.broadcast([channelIdWithPlatform], fullReport).catch(err => {
-                 console.warn(`[报告发送失败] 无法发送报告到频道 ${channelIdWithPlatform} (地区 ${regionId}):`, err.message);
+               console.warn(`[报告发送失败] 无法发送报告到频道 ${channelIdWithPlatform} (地区 ${regionId}):`, err.message);
                  // 可以根据错误类型进行更具体的处理，例如检查机器人是否在群组中
-                 if (err.response?.status === 404 || err.message.includes('channel not found')) {
-                     console.error(`[报告发送错误] 频道 ${channelIdWithPlatform} 未找到或机器人不在该群组。`);
+               if (err.response?.status === 404 || err.message.includes('channel not found')) {
+                   console.error(`[报告发送错误] 频道 ${channelIdWithPlatform} 未找到或机器人不在该群组。`);
                      // 可能需要标记该地区或通知管理员
-                 }
+               }
              });
         } else {
              console.warn(`[报告跳过] 地区 ${regionId} 的 guildId (${guildId}) 无效，无法发送报告。`);

@@ -1,7 +1,9 @@
 import { Context } from 'koishi';
 // 移除未使用的 TRandom 导入
 // import { TRandom } from '../../utils/Random';
-import { Region } from '../../types';
+// --- 修改：导入 Army ---
+import { Region, Army, ArmyStatus } from '../../types';
+// --- 修改结束 ---
 
 export function Regioninfo(ctx: Context) {
   // 修改命令定义，接受一个可选参数 identifier
@@ -69,6 +71,24 @@ ${username} 同志！
         const regiondata: Region = regionDataResult[0];
         const FormalPopulation = (regiondata.population / 10000).toFixed(2);
 
+        // --- 新增：查询驻扎在该地区的军队 ---
+        let garrisonInfo = '■地区驻军：无'; // 默认值
+        try {
+          const garrisonedArmies = await ctx.database.get('army', {
+            regionId: regiondata.RegionId,
+            status: ArmyStatus.GARRISONED,
+          });
+
+          if (garrisonedArmies && garrisonedArmies.length > 0) {
+            const armyNames = garrisonedArmies.map(army => `${army.name} (${army.armyId})`).join(', ');
+            garrisonInfo = `■地区驻军：${garrisonedArmies.length}支 (${armyNames})`;
+          }
+        } catch (armyError) {
+          console.error(`查询地区 ${regiondata.RegionId} 驻军时出错:`, armyError);
+          garrisonInfo = '■地区驻军：查询失败';
+        }
+        // --- 新增结束 ---
+
         // 获取群成员数量 (如果需要，可以保留)
         // const memberCount = session.guildId ? (await session.bot.getGuildMemberList(session.guildId)).data.length : 'N/A';
 
@@ -83,8 +103,8 @@ ${username} 同志！
 □地区仓库： ${regiondata.OwarehouseCapacity ?? '?'} / ${regiondata.warehouseCapacity ?? '?'}
 □第一产业数量：${regiondata.farms}
 □第二产业数量：${regiondata.Department}
-■地区驻军：未完成
-`.trim();
+${garrisonInfo}
+`.trim(); // <--- 修改：替换原来的“未完成”
       } catch (error) {
         console.error('查看地区时出错:', error);
         return '查看地区信息时发生错误，请查看控制台日志。';
