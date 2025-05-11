@@ -139,17 +139,52 @@ export async function performHourlyUpdateLogic(ctx: Context) {
                     }
                 }
             }
-            // 计算石料产出 (所有工作的矿场都产出，使用 TRandom)
-            // stone: TRandom( 2000 , 2500 , 3000 )
-            const stoneProduced = TRandom(2000, 2500, 3000, true) * actualTotalWorkingMines;
-            if (stoneProduced > 0) {
-                currentWarehouse.stone = (currentWarehouse.stone || 0) + stoneProduced;
-                productionSummary['stone'] = (productionSummary['stone'] || 0) + stoneProduced;
+            // 计算石料产出 (只要有劳动力支持矿场工作就产石料)
+            const potentialStoneProducingMines = Math.min(mineCount, maxWorkingMinesFromLabor);
+            if (potentialStoneProducingMines > 0) {
+                const stoneProduced = TRandom(2000, 2500, 3000, true) * potentialStoneProducingMines;
+                if (stoneProduced > 0) {
+                    currentWarehouse.stone = (currentWarehouse.stone || 0) + stoneProduced;
+                    productionSummary['stone'] = (productionSummary['stone'] || 0) + stoneProduced;
+                }
             }
-            totalAllocatedLabor += actualTotalWorkingMines * requiredLaborPerMine; // 计入矿场劳动力
+            // 计入矿场劳动力 (基于实际参与资源开采的矿场，如果 actualTotalWorkingMines > 0)
+            if (actualTotalWorkingMines > 0) {
+                 totalAllocatedLabor += actualTotalWorkingMines * requiredLaborPerMine;
+            } else if (potentialStoneProducingMines > 0 && mineLaborAllocated > 0) {
+                // 如果没有具体资源分配，但有劳动力分配给矿业且有矿场，
+                // 至少要为支持石料生产的那些“概念上”工作的矿场计算劳动力占用。
+                // 这里假设劳动力是按比例分配的，或者至少一部分被占用了。
+                // 一个简化处理是，如果 mineLaborAllocated > 0 且 mineCount > 0，
+                // 即使 totalMinesAllocatedToResources 为0，也认为一部分劳动力被占用了。
+                // 但更准确的是，totalAllocatedLabor 应该只计算那些真正产出主要矿物或明确分配的。
+                // 石料作为副产品，其劳动力消耗已包含在主要矿物的劳动力中。
+                // 如果 actualTotalWorkingMines 为0，但 potentialStoneProducingMines > 0，
+                // 这意味着劳动力分配了，但没有分配到具体资源。
+                // 这种情况下，劳动力是否应该被计入 totalAllocatedLabor 是一个设计选择。
+                // 当前逻辑：如果 actualTotalWorkingMines 为0，则不增加 totalAllocatedLabor，
+                // 这可能导致空闲劳动力偏高。
+                // 一个折中：如果 mineLaborAllocated > 0 且 mineCount > 0，
+                // 即使 actualTotalWorkingMines 为0，也认为 mineLaborAllocated 被占用了。
+                // 但这与上面 maxWorkingMinesFromLabor 的计算方式有重叠。
+                // 维持原状：totalAllocatedLabor 只因 actualTotalWorkingMines > 0 而增加。
+                // 这意味着如果玩家只分配劳动力到矿业，但不分配矿场到具体资源，
+                // 这些劳动力在小时结算时不会被视为“繁忙”（除非其他地方有处理）。
+                // 考虑到 `分配劳动力` 命令会减少 Busylabor，这里可能不需要重复计算。
+                // 确认：`totalAllocatedLabor` 的目的是什么？是为了后续计算新的空闲劳动力。
+                // `分配劳动力` 命令已经减少了 Busylabor。
+                // `HourCheckIn` 中的 `totalAllocatedLabor` 是为了核实这些分配出去的劳动力是否真的在工作
+                // 并基于此调整人口变化等。
+                // 保持原样，仅当 actualTotalWorkingMines > 0 时增加 totalAllocatedLabor。
+                 if (actualTotalWorkingMines > 0) { // 再次检查，确保只在有主要产出时增加
+                    // totalAllocatedLabor += actualTotalWorkingMines * requiredLaborPerMine; // 这行已在上面
+                 }
+            }
         }
-        // 更新资源储量
-        updatedRegionData.resources = { ...currentResources };
+        // 更新资源储量 (仅当有主要矿物产出时才需要更新，因为石料不消耗地下储量)
+        if (actualTotalWorkingMines > 0 && totalMinesAllocatedToResources > 0) {
+            updatedRegionData.resources = { ...currentResources };
+        }
 
 
         // 1.4 其他建筑生产 (炼钢厂, 炼油厂, 混凝土厂, 机械厂等) - 需要类似逻辑检查劳动力和输入资源
@@ -400,4 +435,3 @@ export function HourCheckIn(ctx: Context) {
 
     console.log('Hourly region update task scheduled.');
 }
-

@@ -116,6 +116,7 @@ export function Database(ctx: Context) {
     Busylabor: { type: 'unsigned', initial: 0 },
     //Fixlabor: { type: 'unsigned', initial: 0 },
     laborAllocation: { type: 'json', initial: {} }, // <--- 新增此行
+    militaryIndustry: { type: 'unsigned', initial: 0 }, // 军事工业
 
     // --- 电力与基建 ---
     base: { type: 'unsigned', initial: 0 }, // 基础设施
@@ -173,6 +174,10 @@ export function Database(ctx: Context) {
     lastPopulationModifier: { type: 'integer', initial: 0 }, // 上次人口修改的时间戳
     // garrisonedArmyIds: { type: 'json', initial: [] }, // 考虑是否需要，暂时不加
     factoryAllocation: { type: 'json' },
+    adjacentRegionIds: { type: 'json', initial: [] },
+    isCoastal: { type: 'boolean', initial: false },
+    hasRiver: { type: 'boolean', initial: false },
+    lastHourlyReport: { type: 'string', length: 1024, initial: '' }, // 假设报告长度不超过1024
   }, {
     primary: 'RegionId',
   });

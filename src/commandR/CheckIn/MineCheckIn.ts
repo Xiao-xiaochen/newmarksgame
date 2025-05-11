@@ -29,11 +29,11 @@ export function RMineCheckIn(ctx: Context) {
       // --- 修改：使用小写的 mines ---
       const mines = region.Mine || 0
       const laborAllocation = region.laborAllocation || {}
-      const mineLaborAllocated = laborAllocation['mines'] || 0
+      const mineLaborAllocated = laborAllocation['Mine'] || 0; // 使用 'Mine' 保持一致
 
       // --- 计算矿业产出估算 ---
-      const mineBuildingDef = getBuildingDefinition('mines');
-      const requiredLaborPerMine = mineBuildingDef?.operation?.fixLabor || 10000; // 假设默认10000劳动力
+      const mineBuildingDef = getBuildingDefinition('Mine'); // 使用正确的键 'Mine'
+      const requiredLaborPerMine = mineBuildingDef?.operation?.fixLabor || 20000; // 从Buildings.ts获取正确的劳动力需求
       const mineProduces = mineBuildingDef?.operation?.produces || {}; // 获取矿场产出定义
 
       const maxWorkingMines = Math.floor(mineLaborAllocated / requiredLaborPerMine);

@@ -2,16 +2,13 @@ import { Context } from 'koishi';
 import { userdata, Region } from '../types'; // 导入需要的类型
 
 export function DisbindRegion(ctx: Context) {
-  ctx.command('解绑地区', '解除当前群聊绑定的地区。')
-    .usage('解除当前群聊与地区的绑定。仅国家领导人可操作，且只能解绑自己国家拥有的地区。')
+  ctx.command('解绑地区 [targetRegionId:string]', '解除地区与群聊的绑定。可指定地区ID，否则为当前群聊绑定地区。')
+    .usage('解绑地区 [地区ID]\n解除指定地区ID或当前群聊所绑定地区的群聊绑定。仅国家领导人可操作，且只能解绑自己国家拥有的地区。')
     .example('解绑地区')
-    .action(async ({ session }) => {
-      if (!session || !session.guildId) {
-        return '此命令只能在群聊中使用。';
-      }
-
+    .example('解绑地区 1145')
+    .action(async ({ session }, targetRegionId) => {
       const userId = session.userId;
-      const guildId = session.guildId;
+      const currentGuildId = session.guildId; // 当前群聊ID，用于无参数时
       const username = session.author?.name || '未知用户';
 
       if (!userId) {
@@ -26,30 +23,56 @@ export function DisbindRegion(ctx: Context) {
         }
         const userCountryName = userDataResult[0].countryName;
         if (!userCountryName) {
-            return `${username} 同志，您的用户数据中缺少国家信息。`;
+          return `${username} 同志，您的用户数据中缺少国家信息。`;
         }
 
-        // 2. 查找当前群聊绑定的地区
-        const boundRegionResult = await ctx.database.get('regiondata', { guildId: guildId });
-        if (!boundRegionResult || boundRegionResult.length === 0) {
-          return `当前群聊 (${guildId}) 没有绑定任何地区。`;
+        let regionToDisbind: Region | undefined;
+        let operationDescription: string; // 用于日志和返回消息
+
+        if (targetRegionId) {
+          // --- 情况1: 指定了地区ID ---
+          operationDescription = `地区 ${targetRegionId}`;
+          const targetRegionResult = await ctx.database.get('regiondata', { RegionId: targetRegionId });
+          if (!targetRegionResult || targetRegionResult.length === 0) {
+            return `未找到地区ID为 ${targetRegionId} 的地区。`;
+          }
+          regionToDisbind = targetRegionResult[0];
+
+          if (!regionToDisbind.guildId) {
+            return `地区 ${targetRegionId} 当前未绑定任何群聊，无需解绑。`;
+          }
+
+        } else {
+          // --- 情况2: 未指定地区ID，解绑当前群聊 ---
+          if (!currentGuildId) {
+            return '此命令在私聊中使用时必须指定地区ID。';
+          }
+          operationDescription = `当前群聊 (${currentGuildId}) 绑定的地区`;
+          const boundRegionResult = await ctx.database.get('regiondata', { guildId: currentGuildId });
+          if (!boundRegionResult || boundRegionResult.length === 0) {
+            return `当前群聊 (${currentGuildId}) 没有绑定任何地区。`;
+          }
+          regionToDisbind = boundRegionResult[0];
         }
-        const boundRegion: Region = boundRegionResult[0];
-        const regionIdToDisbind = boundRegion.RegionId;
 
         // 3. 验证该地区是否属于执行命令的领导人所在的国家
-        if (boundRegion.owner !== userCountryName) {
-          return `地区 ${regionIdToDisbind} (当前群聊绑定) 属于国家 ${boundRegion.owner || '未知'}，您无法解绑不属于您国家 (${userCountryName}) 的地区。`;
+        if (regionToDisbind.owner !== userCountryName) {
+          return `${operationDescription} (ID: ${regionToDisbind.RegionId}) 属于国家 ${regionToDisbind.owner || '未知'}，您无法解绑不属于您国家 (${userCountryName}) 的地区。`;
         }
 
         // 4. 执行解绑 (将 guildId 设置为 null)
-        await ctx.database.set('regiondata', { RegionId: regionIdToDisbind }, { guildId: null });
+        // 保存一下被解绑的群聊ID，用于返回消息
+        const previouslyBoundGuildId = regionToDisbind.guildId;
+        await ctx.database.set('regiondata', { RegionId: regionToDisbind.RegionId }, { guildId: null });
 
-        return `成功将地区 ${regionIdToDisbind} (属于 ${userCountryName}) 与当前群聊解绑。`;
+        if (targetRegionId) {
+          return `成功将地区 ${targetRegionId} (属于 ${userCountryName}) 从群聊 ${previouslyBoundGuildId || '未知'} 解绑。`;
+        } else {
+          return `成功将地区 ${regionToDisbind.RegionId} (属于 ${userCountryName}) 与当前群聊 (${currentGuildId}) 解绑。`;
+        }
 
       } catch (error) {
-        console.error(`解绑群聊 ${guildId} 的地区时出错:`, error);
-        // 强类型断言 error 为 Error 类型
+        console.error(`解绑地区时出错 (用户: ${userId}, 目标地区: ${targetRegionId || '当前群聊'}):`, error);
         const errorMessage = (error as Error).message;
         return `解绑地区时发生错误: ${errorMessage}`;
       }
