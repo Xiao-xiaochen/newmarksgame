@@ -1,4 +1,4 @@
-import { Context } from 'koishi';
+import { Context, Query } from 'koishi'; // 导入 Query
 import { Region } from '../../types';
 
 export function ResourceInfo(ctx: Context) {
@@ -21,7 +21,7 @@ export function ResourceInfo(ctx: Context) {
       const username = session.author?.name || '未知用户';
       const format = (num: number | undefined) => num ? num.toLocaleString() : '未知'; // 处理 undefined 的情况
 
-      let query: Partial<Region> = {}; // 初始化查询对象
+      let dbQuery: Query<Region>; // 使用 Query<Region> 类型
 
       try {
         // 检查用户是否注册 (可选，但建议保留)
@@ -40,14 +40,14 @@ ${username} 同志！
           // 如果提供了标识符
           if (/^\d{4}$/.test(identifier)) {
             // 如果是4位数字，按 RegionId 查询
-            query = { RegionId: identifier };
+            dbQuery = { RegionId: identifier };
           } else {
             // 否则，按 guildId 查询
-            query = { guildId: identifier };
+            dbQuery = { guildId: identifier };
           }
         } else if (session.guildId) {
           // 如果没有提供标识符，但在群聊中，按当前 guildId 查询
-          query = { guildId: session.guildId };
+          dbQuery = { guildId: session.guildId };
         } else {
           // 如果既没有标识符，也不在群聊中，则无法确定查询目标
           return '请提供地区编号或群号，或者在已绑定地区的群聊中使用此命令。';
@@ -55,7 +55,7 @@ ${username} 同志！
         // --- 查询条件确定完毕 ---
 
         // 执行数据库查询
-        const regionDataResult = await ctx.database.get('regiondata', query);
+        const regionDataResult = await ctx.database.get('regiondata', dbQuery);
 
         // 检查是否找到地区
         if (!regionDataResult || regionDataResult.length === 0) {
@@ -85,7 +85,7 @@ ${username} 同志！
         // 格式化并返回资源信息
         return `
 ===[地区资源储量]===
-地区编号：${regiondata.guildId}
+地区编号：${regiondata.RegionId}
 资源单位：（吨）
 ■稀土资源：${format(regiondata.resources.rareEarth) || 0 }
 ■稀有金属：${format(regiondata.resources.rareMetal) || 0 }

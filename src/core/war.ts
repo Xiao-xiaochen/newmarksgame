@@ -1,359 +1,542 @@
-/**
- *  all wars are civil wars,because all men are brothers.——Francois Fenelon
- *  所有的战争都是内战，因为所有的人类都是同胞。——弗朗索瓦•费奈隆
- *  愿世界和平
- */
+import { Army, Region, TerrainType, BattleReport, BattlePhase, ArmyStatus, userdata } from '../types';
+import { Context } from 'koishi'; // 添加 Context 导入
+import { INFANTRY_EQUIPMENT_STATS, INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS } from './equipmentStats';
 
-import { Context } from 'koishi';
-import { Army, ArmyStatus, Region, TerrainType } from '../types';
-import { INFANTRY_EQUIPMENT_STATS, INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS, } from './equipmentStats';
-import { TerrainStatModifiers } from '../types';
+const MAX_COMBAT_WIDTH = 80; // 默认战场宽度
+const REINFORCE_CHANCE = 0.5; // 增援几率
+const BASE_ORGANIZATION_DAMAGE = 5; // 基础组织度伤害
+const BASE_MANPOWER_LOSS_FACTOR = 0.01; // 基础人力损失系数
+const ROUT_THRESHOLD = 0.2; // 溃退组织度阈值 (20%)
 
-// 定义装备的基础属性接口
-// --- 常量定义 ---
-const ORGANIZATION_PER_GUN = INFANTRY_EQUIPMENT_STATS.organization; // 每把枪提供的组织度
-const RETREAT_THRESHOLD_PERCENT = 0.20; // 组织度低于此百分比时触发溃退
-const DIRECT_BREAKTHROUGH_THRESHOLD = 1.00; // 突破值 >= 防御力 * 此值 = 直接突破
-const PARTIAL_BREAKTHROUGH_THRESHOLD = 0.50; // 突破值 >= 防御力 * 此值 = 部分突破
-const DIRECT_BREAKTHROUGH_ORG_DAMAGE_PERCENT = 0.30; // 直接突破对敌方组织度伤害百分比
-const PARTIAL_BREAKTHROUGH_ORG_DAMAGE_PERCENT = 0.15; // 部分突破对敌方组织度伤害百分比
-const STALEMATE_HOURLY_ORG_DAMAGE_FACTOR = 0.2; // 胶着战每小时组织度伤害系数
-const STALEMATE_HOURLY_EQUIPMENT_LOSS_PERCENT = 0.05; // 胶着战每小时装备损失百分比
-const RETREAT_EQUIPMENT_LOSS_PERCENT = 0.30; // 溃退时强制损失装备百分比
-const MEDICAL_EFFICIENCY = 1; // 医疗效率 (影响伤亡转换)，暂定为1
-const COMBAT_TICK_INTERVAL_HOURS = 1; // 战斗模拟的时间间隔（小时）
-const MAX_COMBAT_TICKS = 24 * 7; // 最大战斗持续时间（模拟小时数），防止无限战斗
-
-// --- 辅助类型 ---
-interface CombatArmy extends Army {
-    initialOrganization: number; // 记录战斗开始时的组织度
-    currentOrganization: number; // 当前组织度 (战斗中会变化)
-    currentManpower: number; // 当前兵力 (战斗中会变化)
-    currentEquipmentCount: number; // 当前装备数 (战斗中会变化)
-    combatStats?: CalculatedCombatStats; // 缓存计算后的战斗属性
+interface CombatParticipant {
+    army: Army;
+    currentManpower: number;
+    currentOrganization: number;
+    totalAttack: number;
+    totalDefense: number;
+    totalBreakthrough: number;
+    terrainModifiers: {
+        attack: number;
+        defense: number;
+        breakthrough: number;
+    };
+    isAttacker: boolean;
 }
 
-interface CalculatedCombatStats {
-    attack: number;
-    defense: number;
-    breakthrough: number;
+// 计算军队的装备基础属性总和 (仅考虑步兵装备作为示例)
+function calculateArmyBaseStats(army: Army): { attack: number; defense: number; breakthrough: number; organization: number } {
+    let totalAttack = 0;
+    let totalDefense = 0;
+    let totalBreakthrough = 0;
+    let totalOrganization = 0;
+
+    const infantryEquipmentCount = army.equipment?.InfantryEquipment || 0;
+
+    if (infantryEquipmentCount > 0) {
+        totalAttack += INFANTRY_EQUIPMENT_STATS.attack * infantryEquipmentCount;
+        totalDefense += INFANTRY_EQUIPMENT_STATS.defense * infantryEquipmentCount;
+        totalBreakthrough += INFANTRY_EQUIPMENT_STATS.breakthrough * infantryEquipmentCount;
+        // 组织度由装备提供，并与兵力按比例相关，这里简化为直接叠加，后续可调整
+        // 假设每单位步兵装备提供固定组织度，总组织度上限受兵力影响或有其他计算方式
+        // 此处暂时将装备提供的组织度作为基础，后续战斗中再根据兵力调整
+        totalOrganization += INFANTRY_EQUIPMENT_STATS.organization * infantryEquipmentCount;
+    }
+
+    // 简单的人力基础攻防，可根据需要调整或移除
+    totalAttack += army.manpower * 0.1; // 每人0.1攻击
+    totalDefense += army.manpower * 0.1; // 每人0.1防御
+
+    // 军队的初始组织度也应基于兵力和装备，这里暂时设定一个基于兵力的值，并加上装备提供的
+    // 假设基础组织度为兵力的一半，加上装备提供的组织度
+    // 注意：Army 接口中已有 organization 字段，此处计算的值应赋给该字段或用于战斗开始时的初始化
+    const calculatedOrganization = army.manpower * 0.5 + totalOrganization;
+    // army.organization = calculatedOrganization; // 更新军队对象中的组织度
+
+    return {
+        attack: totalAttack,
+        defense: totalDefense,
+        breakthrough: totalBreakthrough,
+        organization: calculatedOrganization // 返回计算后的组织度
+    };
 }
 
-// --- 核心战斗函数 ---
+// 获取地形修正 (仅考虑步兵装备)
+function getTerrainModifiers(terrain: TerrainType): { attack: number; defense: number; breakthrough: number; } {
+    const modifiers = INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS[terrain] || {};
+    return {
+        attack: modifiers.attack || 0,
+        defense: modifiers.defense || 0,
+        breakthrough: modifiers.breakthrough || 0,
+    };
+}
+
+// 初始化战斗参与者
+function initializeParticipant(army: Army, terrain: TerrainType, isAttacker: boolean): CombatParticipant {
+    const baseStats = calculateArmyBaseStats(army);
+    const terrainModifiers = getTerrainModifiers(terrain);
+
+    // 确保军队对象中的 organization 属性得到初始化或更新
+    // 如果 army.organization 在传入时已经是计算好的，则直接使用
+    // 否则，使用 calculateArmyBaseStats 返回的 organization
+    const initialOrganization = army.organization !== undefined ? army.organization : baseStats.organization;
+
+    return {
+        army,
+        currentManpower: army.manpower,
+        currentOrganization: initialOrganization, // 使用 army 自身或计算得到的组织度
+        totalAttack: baseStats.attack * (1 + terrainModifiers.attack),
+        totalDefense: baseStats.defense * (1 + terrainModifiers.defense),
+        totalBreakthrough: baseStats.breakthrough * (1 + terrainModifiers.breakthrough),
+        terrainModifiers,
+        isAttacker,
+    };
+}
+
+// 执行一轮战斗
+function executeCombatRound(attacker: CombatParticipant, defender: CombatParticipant, battleReport: BattleReport, phase: BattlePhase): void {
+    const roundReport = {
+        phase,
+        attackerStats: { manpower: attacker.currentManpower, organization: attacker.currentOrganization },
+        defenderStats: { manpower: defender.currentManpower, organization: defender.currentOrganization },
+        attackerLosses: { manpower: 0, organization: 0 },
+        defenderLosses: { manpower: 0, organization: 0 },
+        log: [] as string[],
+    };
+
+    // 1. 组织度伤害计算
+    // 攻击方对防御方造成组织度伤害
+    let orgDamageToDefender = (attacker.totalAttack / (defender.totalDefense + 1)) * BASE_ORGANIZATION_DAMAGE;
+    orgDamageToDefender = Math.max(0, orgDamageToDefender); // 确保不为负
+    defender.currentOrganization -= orgDamageToDefender;
+    roundReport.defenderLosses.organization = orgDamageToDefender;
+    roundReport.log.push(`攻击方对防御方造成 ${orgDamageToDefender.toFixed(2)} 组织度伤害.`);
+
+    // 防御方对攻击方造成组织度伤害 (反击)
+    let orgDamageToAttacker = (defender.totalAttack / (attacker.totalDefense + 1)) * BASE_ORGANIZATION_DAMAGE * 0.5; // 反击伤害较低
+    orgDamageToAttacker = Math.max(0, orgDamageToAttacker);
+    attacker.currentOrganization -= orgDamageToAttacker;
+    roundReport.attackerLosses.organization = orgDamageToAttacker;
+    roundReport.log.push(`防御方对攻击方造成 ${orgDamageToAttacker.toFixed(2)} 组织度伤害.`);
+
+    // 确保组织度不低于0
+    attacker.currentOrganization = Math.max(0, attacker.currentOrganization);
+    defender.currentOrganization = Math.max(0, defender.currentOrganization);
+
+    // 2. 突破判定与兵力伤害
+    // 攻击方尝试突破
+    if (attacker.totalBreakthrough > defender.totalDefense) {
+        roundReport.log.push('攻击方成功突破！');
+        // 突破成功，对防御方造成较高兵力伤害
+        const manpowerLossDefender = defender.currentManpower * BASE_MANPOWER_LOSS_FACTOR * 2; // 突破成功伤害加倍
+        defender.currentManpower -= manpowerLossDefender;
+        roundReport.defenderLosses.manpower = manpowerLossDefender;
+        roundReport.log.push(`防御方损失兵力 ${manpowerLossDefender.toFixed(0)}.`);
+
+        // 防御方在被突破时也对攻击方造成少量兵力伤害
+        const manpowerLossAttackerBreakthrough = attacker.currentManpower * BASE_MANPOWER_LOSS_FACTOR * 0.25;
+        attacker.currentManpower -= manpowerLossAttackerBreakthrough;
+        roundReport.attackerLosses.manpower += manpowerLossAttackerBreakthrough;
+        roundReport.log.push(`攻击方在突破时损失兵力 ${manpowerLossAttackerBreakthrough.toFixed(0)}.`);
+    } else {
+        roundReport.log.push('攻击方未能突破。');
+        // 未突破，双方都受到常规兵力伤害
+        const manpowerLossDefender = defender.currentManpower * BASE_MANPOWER_LOSS_FACTOR;
+        defender.currentManpower -= manpowerLossDefender;
+        roundReport.defenderLosses.manpower = manpowerLossDefender;
+        roundReport.log.push(`防御方损失兵力 ${manpowerLossDefender.toFixed(0)}.`);
+
+        const manpowerLossAttacker = attacker.currentManpower * BASE_MANPOWER_LOSS_FACTOR;
+        attacker.currentManpower -= manpowerLossAttacker;
+        roundReport.attackerLosses.manpower += manpowerLossAttacker;
+        roundReport.log.push(`攻击方损失兵力 ${manpowerLossAttacker.toFixed(0)}.`);
+    }
+
+    // 确保兵力不低于0
+    attacker.currentManpower = Math.max(0, attacker.currentManpower);
+    defender.currentManpower = Math.max(0, defender.currentManpower);
+
+    battleReport.rounds.push(roundReport);
+}
+
+// 内部战斗结算函数
+function resolveSingleCombatEncounter(attackingArmy: Army, defendingArmy: Army, region: Region): BattleReport {
+    const battleReport: BattleReport = {
+        attacker: { armyId: attackingArmy.armyId, name: attackingArmy.name, initialManpower: attackingArmy.manpower, initialOrganization: attackingArmy.organization || calculateArmyBaseStats(attackingArmy).organization },
+        defender: { armyId: defendingArmy.armyId, name: defendingArmy.name, initialManpower: defendingArmy.manpower, initialOrganization: defendingArmy.organization || calculateArmyBaseStats(defendingArmy).organization },
+        regionId: region.RegionId,
+        terrain: region.Terrain,
+        startTime: Date.now(),
+        rounds: [],
+        result: {
+            winner: null,
+            reason: '',
+            finalAttackerManpower: 0,
+            finalAttackerOrganization: 0,
+            finalDefenderManpower: 0,
+            finalDefenderOrganization: 0,
+        }
+    };
+
+    const attacker = initializeParticipant(attackingArmy, region.Terrain, true);
+    const defender = initializeParticipant(defendingArmy, region.Terrain, false);
+
+    // 更新战斗报告中的初始组织度，确保与 participant 一致
+    battleReport.attacker.initialOrganization = attacker.currentOrganization;
+    battleReport.defender.initialOrganization = defender.currentOrganization;
+
+    let roundCount = 0;
+    const maxRounds = 20; // 最大回合数，防止无限循环
+
+    while (roundCount < maxRounds && attacker.currentManpower > 0 && defender.currentManpower > 0 && attacker.currentOrganization > attacker.army.manpower * ROUT_THRESHOLD && defender.currentOrganization > defender.army.manpower * ROUT_THRESHOLD) {
+        roundCount++;
+        let phase: BattlePhase = BattlePhase.MAIN_COMBAT;
+        if (roundCount <= 3) phase = BattlePhase.INITIAL_ENGAGEMENT;
+        else if (roundCount > 10) phase = BattlePhase.PROTRACTED_COMBAT; // 示例：超过10回合进入持久战
+
+        executeCombatRound(attacker, defender, battleReport, phase);
+
+        // 简单增援逻辑 (此处未实现具体增援单位加入战斗，仅为示例点)
+        if (Math.random() < REINFORCE_CHANCE) {
+            // battleReport.rounds[battleReport.rounds.length - 1].log.push('一方或双方获得了增援！(未实现)');
+        }
+    }
+
+    // 战斗结束判定
+    battleReport.endTime = Date.now();
+    battleReport.result.finalAttackerManpower = Math.round(attacker.currentManpower);
+    battleReport.result.finalAttackerOrganization = attacker.currentOrganization;
+    battleReport.result.finalDefenderManpower = Math.round(defender.currentManpower);
+    battleReport.result.finalDefenderOrganization = defender.currentOrganization;
+
+    // 溃退条件调整：组织度低于最大组织度（假设为初始兵力）的 ROUT_THRESHOLD，或者兵力耗尽
+    // 注意：attacker.army.manpower 是初始兵力，如果战斗中兵力会变，可能需要用初始值
+    const attackerInitialManpower = battleReport.attacker.initialManpower; // 使用战报中的初始兵力
+    const defenderInitialManpower = battleReport.defender.initialManpower;
+
+    if (attacker.currentOrganization <= attackerInitialManpower * ROUT_THRESHOLD || attacker.currentManpower <= 0) {
+        battleReport.result.winner = defendingArmy.armyId;
+        battleReport.result.reason = attacker.currentManpower <= 0 ? '攻击方兵力耗尽' : '攻击方组织度过低溃退';
+        defendingArmy.status = ArmyStatus.DEFENDING; // 防守方胜利后恢复驻扎/防御状态
+        attackingArmy.status = ArmyStatus.RETREATING; // 攻击方溃退
+    } else if (defender.currentOrganization <= defenderInitialManpower * ROUT_THRESHOLD || defender.currentManpower <= 0) {
+        battleReport.result.winner = attackingArmy.armyId;
+        battleReport.result.reason = defender.currentManpower <= 0 ? '防御方兵力耗尽' : '防御方组织度过低溃退';
+        attackingArmy.status = ArmyStatus.OCCUPYING; // 攻击方胜利后可能进入占领状态
+        defendingArmy.status = ArmyStatus.RETREATING; // 防御方溃退
+    } else if (roundCount >= maxRounds) {
+        battleReport.result.winner = null; // 僵持
+        battleReport.result.reason = '战斗达到最大回合数，陷入僵持';
+        attackingArmy.status = ArmyStatus.STALEMATE;
+        defendingArmy.status = ArmyStatus.STALEMATE;
+    } else {
+        // 理论上不应该到这里，因为循环条件会保证一方溃退或兵力耗尽
+        battleReport.result.winner = null;
+        battleReport.result.reason = '未知战斗结果';
+        attackingArmy.status = ArmyStatus.IDLE; // 或其他合适状态
+        defendingArmy.status = ArmyStatus.IDLE;
+    }
+
+    // 更新军队对象的实际兵力和组织度
+    attackingArmy.manpower = Math.round(attacker.currentManpower);
+    attackingArmy.organization = attacker.currentOrganization;
+    defendingArmy.manpower = Math.round(defender.currentManpower);
+    defendingArmy.organization = defender.currentOrganization;
+
+    return battleReport;
+}
 
 /**
- * 初始化并处理一场战斗。
+ * 初始化并执行战斗流程。
  * @param ctx Koishi Context
- * @param attackerArmy 进攻方军队数据
- * @param defenderArmies 防守方军队数据数组
+ * @param attackingArmy 进攻方军队
+ * @param defendingArmies 防御方军队列表 (可能有多支)
  * @param region 战斗发生的地区
  */
-export async function initiateCombat(ctx: Context, attackerArmy: Army, defenderArmies: Army[], region: Region): Promise<void> {
-    console.log(`[战斗开始] 地区 ${region.RegionId}: ${attackerArmy.name}(${attackerArmy.armyId}) vs ${defenderArmies.map(d => `${d.name}(${d.armyId})`).join(', ')}`);
+export async function initiateCombat(ctx: Context, attackingArmy: Army, defendingArmies: Army[], region: Region): Promise<void> {
+    console.log(`[战斗开始] 军队 ${attackingArmy.armyId} 在地区 ${region.RegionId} 对战 ${defendingArmies.map(d => d.armyId).join(', ')}`);
 
-    const terrain = region.Terrain || TerrainType.PLAIN;
-
-    // --- 初始化战斗单位 ---
-    const attacker: CombatArmy = initializeCombatArmy(attackerArmy);
-    const defenders: CombatArmy[] = defenderArmies.map(initializeCombatArmy);
-
-    // --- 更新军队状态为战斗中 (防御方也需要更新) ---
-    const updatePromises: Promise<any>[] = [
-        ctx.database.set('army', { armyId: attacker.armyId }, { status: ArmyStatus.FIGHTING }),
-        ...defenders.map(def => ctx.database.set('army', { armyId: def.armyId }, { status: ArmyStatus.FIGHTING }))
-    ];
-    await Promise.all(updatePromises);
-
-    // --- 战斗模拟循环 (按小时tick) ---
-    let combatTicks = 0;
-    let battleEnded = false;
-    let attackerWon: boolean | null = null; // null表示未结束
-
-    // 在循环外声明并初始化 combinedDefenderStats
-    let combinedDefenderStats: { defense: number; totalOrganization: number; totalManpower: number; totalEquipment: number } = {
-        defense: 0,
-        totalOrganization: 0,
-        totalManpower: 0,
-        totalEquipment: 0,
-    };
-
-    while (!battleEnded && combatTicks < MAX_COMBAT_TICKS) {
-        combatTicks++;
-        console.log(`[战斗 Tick ${combatTicks}] 地区 ${region.RegionId}`);
-
-        // --- 1. 计算双方当前战斗属性 ---
-        attacker.combatStats = calculateArmyCombatStats(attacker, terrain);
-        // 防守方合并计算属性 (简单合并，未来可优化为多方混战逻辑)
-        // 更新在循环外声明的 combinedDefenderStats
-        combinedDefenderStats = calculateCombinedDefenderStats(defenders, terrain);
-
-        // --- 2. 进攻方回合 ---
-        if (attacker.currentOrganization > 0 && combinedDefenderStats.totalOrganization > 0) {
-            console.log(`  进攻方 ${attacker.armyId} 行动: Org=${attacker.currentOrganization.toFixed(0)}, Atk=${attacker.combatStats.attack.toFixed(0)}, Brk=${attacker.combatStats.breakthrough.toFixed(0)}`);
-            console.log(`  防守方 (合并) 行动: Org=${combinedDefenderStats.totalOrganization.toFixed(0)}, Def=${combinedDefenderStats.defense.toFixed(0)}`);
-            processCombatRound(attacker, defenders, combinedDefenderStats, terrain, 'attacker');
-        }
-
-        // --- 3. 防守方回合 (每个防守单位独立对进攻方造成伤害) ---
-        if (attacker.currentOrganization > 0 && combinedDefenderStats.totalOrganization > 0) {
-            for (const defender of defenders) {
-                if (defender.currentOrganization > 0) {
-                    defender.combatStats = calculateArmyCombatStats(defender, terrain); // 计算单个防御者属性
-                    console.log(`  防守方 ${defender.armyId} 行动: Org=${defender.currentOrganization.toFixed(0)}, Atk=${defender.combatStats.attack.toFixed(0)}, Brk=${defender.combatStats.breakthrough.toFixed(0)}`);
-                    // 防守方攻击进攻方
-                    processCombatRound(defender, [attacker], { // 目标只有进攻方
-                        defense: attacker.combatStats?.defense ?? 0,
-                        totalOrganization: attacker.currentOrganization,
-                        totalManpower: attacker.currentManpower,
-                        totalEquipment: attacker.currentEquipmentCount,
-                    }, terrain, 'defender');
-                }
-            }
-        }
-
-        // --- 4. 检查溃退和战斗结束条件 ---
-        const attackerRetreated = checkAndHandleRetreat(attacker);
-        const defendersRetreated = defenders.map(checkAndHandleRetreat);
-        const allDefendersRetreated = defenders.every(d => d.currentOrganization <= 0 || defendersRetreated[defenders.indexOf(d)]);
-
-        if (attackerRetreated || attacker.currentOrganization <= 0) {
-            battleEnded = true;
-            attackerWon = false;
-            console.log(`[战斗结束] 进攻方 ${attacker.armyId} 溃退或被消灭。`);
-        } else if (allDefendersRetreated || combinedDefenderStats.totalOrganization <= 0) {
-            battleEnded = true;
-            attackerWon = true;
-            console.log(`[战斗结束] 所有防守方溃退或被消灭。`);
-        }
-
-        // --- 可以在这里添加短暂的暂停，避免CPU占用过高 (如果需要实时感) ---
-        // await new Promise(resolve => setTimeout(resolve, 100)); // 暂停100ms
+    // 1. 设置参战军队状态为战斗中
+    await ctx.database.set('army', { armyId: attackingArmy.armyId }, { status: ArmyStatus.FIGHTING });
+    for (const defArmy of defendingArmies) {
+        await ctx.database.set('army', { armyId: defArmy.armyId }, { status: ArmyStatus.FIGHTING });
     }
+    console.log(`[战斗状态] 进攻方 ${attackingArmy.armyId} 及防御方 ${defendingArmies.map(d => d.armyId).join(', ')} 状态已设为 FIGHTING。`);
 
-    if (!battleEnded && combatTicks >= MAX_COMBAT_TICKS) {
-        console.log(`[战斗超时] 地区 ${region.RegionId} 的战斗达到最大持续时间，强制结束。`);
-        // 可以根据当前组织度或其他规则判定胜负，或视为平局
-        attackerWon = (attacker.currentOrganization >= combinedDefenderStats.totalOrganization); // 简单判定
-        battleEnded = true;
+    // 2. 简化：目前只处理第一个防御方军队，未来可以扩展为多方混战或轮战
+    // TODO: 实现更复杂的多个防御者参与战斗的逻辑 (例如，基于战场宽度选择参战者)
+    if (defendingArmies.length === 0) {
+        console.warn(`[战斗警告] 军队 ${attackingArmy.armyId} 在地区 ${region.RegionId} 没有防御方军队，战斗取消。`);
+        await ctx.database.set('army', { armyId: attackingArmy.armyId }, { status: ArmyStatus.GARRISONED }); // 攻击方恢复驻扎
+        return;
     }
+    const mainDefender = defendingArmies[0]; // 选取主要防御者
+    console.log(`[战斗核心] 主要交战双方: 攻击方 ${attackingArmy.armyId} vs 防御方 ${mainDefender.armyId}`);
 
-    // --- 5. 战斗结算 (传递 combatTicks) ---
-    await finalizeCombat(ctx, attacker, defenders, region, attackerWon, combatTicks);
-}
+    // 3. 执行战斗结算
+    const battleReport = resolveSingleCombatEncounter(attackingArmy, mainDefender, region);
+    console.log(`[战斗结算] 军队 ${attackingArmy.armyId} 与 ${mainDefender.armyId} 的战斗已结算。胜者: ${battleReport.result.winner || '僵持'}, 原因: ${battleReport.result.reason}`);
 
-// --- 辅助函数 ---
-
-/** 初始化用于战斗计算的军队对象 */
-function initializeCombatArmy(army: Army): CombatArmy {
-    const equipmentCount = army.equipment?.['InfantryEquipment'] || 0;
-    const initialOrg = equipmentCount * ORGANIZATION_PER_GUN;
-    return {
-        ...army, // 复制基础属性
-        initialOrganization: initialOrg,
-        currentOrganization: initialOrg,
-        currentManpower: army.manpower || 0,
-        currentEquipmentCount: equipmentCount,
-    };
-}
-
-/** 计算单个军队在特定地形下的战斗属性 */
-function calculateArmyCombatStats(army: CombatArmy, terrain: TerrainType): CalculatedCombatStats {
-    const equipmentCount = army.currentEquipmentCount;
-    const baseStats = INFANTRY_EQUIPMENT_STATS;
-    const modifiers = INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS[terrain] || {};
-
-    const calculateStat = (base: number, modifierKey: keyof TerrainStatModifiers): number => {
-        const modifier = modifiers[modifierKey] ?? 0;
-        return Math.max(0, equipmentCount * base * (1 + modifier)); // 确保不为负
-    };
-
-    return {
-        attack: calculateStat(baseStats.attack, 'attack'),
-        defense: calculateStat(baseStats.defense, 'defense'),
-        breakthrough: calculateStat(baseStats.breakthrough, 'breakthrough'),
-    };
-}
-
-/** 计算合并后的防守方属性 */
-function calculateCombinedDefenderStats(defenders: CombatArmy[], terrain: TerrainType): { defense: number; totalOrganization: number; totalManpower: number; totalEquipment: number } {
-    let totalDefense = 0;
-    let totalOrganization = 0;
-    let totalManpower = 0;
-    let totalEquipment = 0;
-
-    for (const defender of defenders) {
-        if (defender.currentOrganization > 0) {
-            defender.combatStats = calculateArmyCombatStats(defender, terrain); // 确保计算过
-            totalDefense += defender.combatStats.defense;
-            totalOrganization += defender.currentOrganization;
-            totalManpower += defender.currentManpower;
-            totalEquipment += defender.currentEquipmentCount;
-        }
-    }
-    return { defense: totalDefense, totalOrganization, totalManpower, totalEquipment };
-}
-
-/** 处理一个战斗回合（一方攻击另一方） */
-function processCombatRound(
-    attacker: CombatArmy,
-    targets: CombatArmy[], // 可能有多个目标，伤害按组织度比例分配
-    targetCombinedStats: { defense: number; totalOrganization: number; totalManpower: number; totalEquipment: number },
-    terrain: TerrainType,
-    attackerRole: 'attacker' | 'defender' // 区分进攻方/防守方回合，未来可用于不同规则
-) {
-    if (!attacker.combatStats || attacker.currentOrganization <= 0 || targetCombinedStats.totalOrganization <= 0) {
-        return; // 攻击方无力或目标已空
-    }
-
-    const attackerStats = attacker.combatStats;
-    const targetDefense = targetCombinedStats.defense;
-    const breakthroughRatio = targetDefense > 0 ? attackerStats.breakthrough / targetDefense : Infinity; // 突破值与防御力的比率
-
-    let totalOrgDamageDealt = 0;
-    let totalCasualtiesInflicted = 0;
-    let totalEquipmentDestroyed = 0;
-
-    // --- 突破判定 ---
-    if (breakthroughRatio >= DIRECT_BREAKTHROUGH_THRESHOLD) {
-        // 直接突破
-        totalOrgDamageDealt = targetCombinedStats.totalOrganization * DIRECT_BREAKTHROUGH_ORG_DAMAGE_PERCENT;
-        totalCasualtiesInflicted = totalOrgDamageDealt / ORGANIZATION_PER_GUN; // 按组织度损失反推伤亡
-        totalEquipmentDestroyed = totalCasualtiesInflicted * 1.5; // 枪械损毁=伤亡×1.5
-        console.log(`    -> ${attacker.armyId} 直接突破! 对目标造成 ${totalOrgDamageDealt.toFixed(0)} 组织度伤害`);
-
-    } else if (breakthroughRatio >= PARTIAL_BREAKTHROUGH_THRESHOLD) {
-        // 部分突破
-        totalOrgDamageDealt = targetCombinedStats.totalOrganization * PARTIAL_BREAKTHROUGH_ORG_DAMAGE_PERCENT;
-        // 枪械损毁率提升至70% (如何应用？理解为伤亡导致的枪械损失概率提升？还是额外损失？)
-        // 简化：按组织度损失计算基础伤亡，然后计算装备损失
-        const baseCasualties = totalOrgDamageDealt / ORGANIZATION_PER_GUN;
-        totalCasualtiesInflicted = baseCasualties; // 暂定伤亡不变
-        totalEquipmentDestroyed = baseCasualties * 1.7; // 假设损毁率提升体现在系数上
-        console.log(`    -> ${attacker.armyId} 部分突破! 对目标造成 ${totalOrgDamageDealt.toFixed(0)} 组织度伤害`);
-
-    } else {
-        // 胶着战 (按小时计算)
-        const baseDamage = attackerStats.attack * Math.max(0, (1 - targetDefense / 3000)); // 基础伤害，防御力上限3000？
-        const hourlyOrgLoss = baseDamage * STALEMATE_HOURLY_ORG_DAMAGE_FACTOR * COMBAT_TICK_INTERVAL_HOURS; // * 地形系数? 规则未明确，暂不加
-        totalOrgDamageDealt = hourlyOrgLoss;
-        totalCasualtiesInflicted = Math.max(0, hourlyOrgLoss / (ORGANIZATION_PER_GUN * MEDICAL_EFFICIENCY));
-        // 每小时枪械损耗 = 目标总人数 * 5%
-        totalEquipmentDestroyed = targetCombinedStats.totalManpower * STALEMATE_HOURLY_EQUIPMENT_LOSS_PERCENT * COMBAT_TICK_INTERVAL_HOURS;
-        console.log(`    -> ${attacker.armyId} 胶着战! 对目标造成 ${totalOrgDamageDealt.toFixed(0)} 组织度伤害`);
-    }
-
-    // --- 将伤害和损失分配给目标单位 (按当前组织度比例) ---
-    distributeDamageAndLosses(targets, totalOrgDamageDealt, totalCasualtiesInflicted, totalEquipmentDestroyed);
-}
-
-/** 将总伤害和损失按比例分配给多个目标单位 */
-function distributeDamageAndLosses(targets: CombatArmy[], totalOrgDamage: number, totalCasualties: number, totalEquipmentLoss: number) {
-    const currentTotalOrg = targets.reduce((sum, t) => sum + t.currentOrganization, 0);
-    if (currentTotalOrg <= 0) return;
-
-    for (const target of targets) {
-        if (target.currentOrganization <= 0) continue;
-
-        const proportion = target.currentOrganization / currentTotalOrg;
-        const orgDamage = totalOrgDamage * proportion;
-        const casualties = totalCasualties * proportion;
-        const equipmentLoss = totalEquipmentLoss * proportion;
-
-        target.currentOrganization = Math.max(0, target.currentOrganization - orgDamage);
-        target.currentManpower = Math.max(0, target.currentManpower - casualties);
-        target.currentEquipmentCount = Math.max(0, target.currentEquipmentCount - equipmentLoss);
-
-        // 确保装备数不超过人数
-        target.currentEquipmentCount = Math.min(target.currentEquipmentCount, target.currentManpower);
-        // 确保组织度不超过装备数提供的上限
-        target.currentOrganization = Math.min(target.currentOrganization, target.currentEquipmentCount * ORGANIZATION_PER_GUN);
-
-        console.log(`      - 目标 ${target.armyId}: Org -${orgDamage.toFixed(0)} -> ${target.currentOrganization.toFixed(0)}, MP -${casualties.toFixed(0)} -> ${target.currentManpower.toFixed(0)}, Eq -${equipmentLoss.toFixed(1)} -> ${target.currentEquipmentCount.toFixed(1)}`);
-    }
-}
-
-
-/** 检查并处理军队溃退 */
-function checkAndHandleRetreat(army: CombatArmy): boolean {
-    const retreatThreshold = army.initialOrganization * RETREAT_THRESHOLD_PERCENT;
-    if (army.currentOrganization > 0 && army.currentOrganization <= retreatThreshold) {
-        console.log(`    !! ${army.armyId} 组织度 (${army.currentOrganization.toFixed(0)}) 低于阈值 (${retreatThreshold.toFixed(0)})，触发溃退!`);
-        // 溃退惩罚
-        const retreatEquipmentLoss = army.currentEquipmentCount * RETREAT_EQUIPMENT_LOSS_PERCENT;
-        const retreatCasualties = Math.max(0, (retreatThreshold - army.currentOrganization) / ORGANIZATION_PER_GUN); // 追加伤亡
-
-        army.currentEquipmentCount = Math.max(0, army.currentEquipmentCount - retreatEquipmentLoss);
-        army.currentManpower = Math.max(0, army.currentManpower - retreatCasualties);
-        army.currentOrganization = 0; // 溃退后组织度清零
-
-        console.log(`      - 溃退惩罚: MP -${retreatCasualties.toFixed(0)} -> ${army.currentManpower.toFixed(0)}, Eq -${retreatEquipmentLoss.toFixed(1)} -> ${army.currentEquipmentCount.toFixed(1)}`);
-        return true; // 已溃退
-    }
-    return false; // 未溃退
-}
-
-/** 战斗结束后更新数据库并发送报告 */
-// --- 添加 combatDuration 参数 ---
-async function finalizeCombat(ctx: Context, attacker: CombatArmy, defenders: CombatArmy[], region: Region, attackerWon: boolean | null, combatDuration: number) {
-    console.log(`[战斗结算] 地区 ${region.RegionId}`);
-
-    const finalUpdatePromises: Promise<any>[] = [];
-    const finalAttackerStatus = attacker.currentOrganization <= 0 ? ArmyStatus.GARRISONED : (attackerWon === false ? ArmyStatus.GARRISONED : ArmyStatus.GARRISONED); // 胜利/失败/平局都恢复驻扎？或失败方解散？
-    const finalDefenderStatus = ArmyStatus.GARRISONED; // 失败方恢复驻扎或解散？
-
+    // 4. 根据战斗结果更新数据库
     // 更新进攻方
-    finalUpdatePromises.push(ctx.database.set('army', { armyId: attacker.armyId }, {
-        status: finalAttackerStatus,
-        manpower: Math.floor(attacker.currentManpower),
-        organization: Math.floor(attacker.currentOrganization),
-        equipment: { ...attacker.equipment, 'InfantryEquipment': Math.floor(attacker.currentEquipmentCount) },
-        // 如果进攻方胜利，需要更新其 regionId
-        ...(attackerWon === true && { regionId: region.RegionId })
-    }));
-    console.log(`  结算 ${attacker.armyId}: Status=${finalAttackerStatus}, MP=${Math.floor(attacker.currentManpower)}, Org=${Math.floor(attacker.currentOrganization)}, Eq=${Math.floor(attacker.currentEquipmentCount)}`);
+    await ctx.database.set('army', { armyId: attackingArmy.armyId }, {
+        manpower: battleReport.result.finalAttackerManpower,
+        organization: battleReport.result.finalAttackerOrganization,
+        status: attackingArmy.status, // conductBattle 内部已经更新了 status
+    });
+    // 更新防御方
+    await ctx.database.set('army', { armyId: mainDefender.armyId }, {
+        manpower: battleReport.result.finalDefenderManpower,
+        organization: battleReport.result.finalDefenderOrganization,
+        status: mainDefender.status, // conductBattle 内部已经更新了 status
+    });
+    console.log(`[数据更新] 军队 ${attackingArmy.armyId} 和 ${mainDefender.armyId} 的兵力、组织度和状态已更新至数据库。`);
 
+    // 5. 发送战报 (简化示例，实际应发送给相关玩家或频道)
+    let reportMessage = `--- 战报：${region.RegionId} (${region.RegionId}) ---\n`;
+    reportMessage += `进攻方: ${battleReport.attacker.name} (${battleReport.attacker.armyId}) | 初始兵力: ${battleReport.attacker.initialManpower}, 初始组织度: ${battleReport.attacker.initialOrganization?.toFixed(0)}\n`;
+    reportMessage += `防御方: ${battleReport.defender.name} (${battleReport.defender.armyId}) | 初始兵力: ${battleReport.defender.initialManpower}, 初始组织度: ${battleReport.defender.initialOrganization?.toFixed(0)}\n`;
+    reportMessage += `地形: ${region.Terrain}\n`;
+    reportMessage += `战斗结果: ${battleReport.result.winner ? `胜者 - ${battleReport.result.winner === attackingArmy.armyId ? attackingArmy.name : mainDefender.name}` : '僵持'}\n`;
+    reportMessage += `原因: ${battleReport.result.reason}\n`;
+    reportMessage += `攻击方损失: 兵力 ${battleReport.attacker.initialManpower - battleReport.result.finalAttackerManpower}, 组织度 ${(battleReport.attacker.initialOrganization || 0) - (battleReport.result.finalAttackerOrganization || 0)}\n`;
+    reportMessage += `防御方损失: 兵力 ${battleReport.defender.initialManpower - battleReport.result.finalDefenderManpower}, 组织度 ${(battleReport.defender.initialOrganization || 0) - (battleReport.result.finalDefenderOrganization || 0)}\n`;
+    reportMessage += `攻击方剩余: 兵力 ${battleReport.result.finalAttackerManpower}, 组织度 ${battleReport.result.finalAttackerOrganization?.toFixed(0)}\n`;
+    reportMessage += `防御方剩余: 兵力 ${battleReport.result.finalDefenderManpower}, 组织度 ${battleReport.result.finalDefenderOrganization?.toFixed(0)}\n`;
 
-    // 更新防守方
-    for (const defender of defenders) {
-        const status = defender.currentOrganization <= 0 ? ArmyStatus.GARRISONED : finalDefenderStatus; // 组织度为0也算驻扎？或解散？
-        finalUpdatePromises.push(ctx.database.set('army', { armyId: defender.armyId }, {
-            status: status,
-            manpower: Math.floor(defender.currentManpower),
-            organization: Math.floor(defender.currentOrganization),
-            equipment: { ...defender.equipment, 'InfantryEquipment': Math.floor(defender.currentEquipmentCount) },
-        }));
-        console.log(`  结算 ${defender.armyId}: Status=${status}, MP=${Math.floor(defender.currentManpower)}, Org=${Math.floor(defender.currentOrganization)}, Eq=${Math.floor(defender.currentEquipmentCount)}`);
+    console.log(`[战报生成]\n${reportMessage}`);
+
+    // 广播战报到地区频道 (如果存在)
+    if (region.guildId) {
+        try {
+            await ctx.broadcast([`onebot:${region.guildId}`], reportMessage);
+            console.log(`[战报广播] 战报已发送至频道 ${region.guildId}`);
+        } catch (e) {
+            console.warn(`[广播失败] 无法向地区 ${region.RegionId} (${region.guildId}) 发送战报:`, e);
+        }
     }
 
-    // 更新地区归属 (如果进攻方胜利且原主人不是进攻方国家)
-    let occupationMessage = '';
-    if (attackerWon === true) {
-        const attackerCountry = (await ctx.database.get('userdata', { userId: attacker.commanderId }))?.[0]?.countryName;
+    // TODO: 处理战斗后的军队状态 (例如，溃退军队的移动，占领逻辑等)
+    // 例如，如果攻击方胜利且状态为 OCCUPYING，可能需要更新地区所有者
+    if (battleReport.result.winner === attackingArmy.armyId && attackingArmy.status === ArmyStatus.OCCUPYING) {
+        const attackerOwnerData = (await ctx.database.get('userdata', { userId: attackingArmy.commanderId }))?.[0];
+        const attackerCountry = attackerOwnerData?.countryName;
         if (attackerCountry && region.owner !== attackerCountry) {
             const oldOwner = region.owner || '无主地';
-            finalUpdatePromises.push(ctx.database.set('regiondata', { RegionId: region.RegionId }, { owner: attackerCountry }));
-            occupationMessage = ` 进攻方 ${attacker.name}(${attacker.armyId}) 获胜并占领了地区 ${region.RegionId} (原属: ${oldOwner})！`;
-            console.log(`[地区易主] 地区 ${region.RegionId} 的控制权从 ${oldOwner} 变为 ${attackerCountry}`);
+            await ctx.database.set('regiondata', { RegionId: region.RegionId }, { owner: attackerCountry });
+            const occupationMsg = `[地区易主] ${attackerCountry} 的军队 ${attackingArmy.name} 占领了地区 ${region.RegionId} (原属: ${oldOwner})!`;
+            console.log(occupationMsg);
+            if (region.guildId) ctx.broadcast([`onebot:${region.guildId}`], occupationMsg).catch(e => console.warn("占领消息广播失败", e));
         } else {
-             occupationMessage = ` 进攻方 ${attacker.name}(${attacker.armyId}) 获胜！`;
+             // 攻击方胜利但无需改变归属 (例如攻击方无国家，或地区已属于攻击方国家)
+            await ctx.database.set('army', { armyId: attackingArmy.armyId }, { status: ArmyStatus.GARRISONED }); // 直接驻扎
+            console.log(`[战斗胜利] 攻击方 ${attackingArmy.armyId} 胜利，已在 ${region.RegionId} 转为驻扎。地区归属未变。`);
         }
-    } else if (attackerWon === false) {
-        occupationMessage = ` 防守方成功击退了 ${attacker.name}(${attacker.armyId}) 的进攻！`;
-    } else {
-        occupationMessage = ` 地区 ${region.RegionId} 的战斗陷入僵持，暂时结束。`;
+    } else if (attackingArmy.status === ArmyStatus.RETREATING) {
+        // TODO: 处理攻击方溃退逻辑，例如返回原驻地或最近友方地区
+        console.log(`[溃退处理] 攻击方 ${attackingArmy.armyId} 溃退，需实现返回逻辑。暂时恢复为驻扎。`);
+        // 简化处理：暂时让溃退军队在原地恢复驻扎，后续应实现撤退到安全区域
+        await ctx.database.set('army', { armyId: attackingArmy.armyId }, { status: ArmyStatus.GARRISONED, targetRegionId: undefined, marchEndTime: undefined });
     }
 
-
-    await Promise.all(finalUpdatePromises);
-    console.log(`[战斗结算] 数据库更新完成。`);
-
-    // 发送战报
-    const reportChannel = `onebot:${region.guildId}`;
-    if (region.guildId) {
-        const defenderNames = defenders.map(d => `${d.name}(${d.armyId})`).join(', ');
-        // --- 使用传入的 combatDuration 参数 ---
-        const report = `**战报 - 地区 ${region.RegionId}**\n进攻方: ${attacker.name}(${attacker.armyId})\n防守方: ${defenderNames}\n结果: ${occupationMessage}\n战斗持续 ${combatDuration} 小时(模拟)。`;
-        // 可以添加更详细的伤亡报告
-        ctx.broadcast([reportChannel], report).catch(e => console.warn("广播战报失败", e));
+    if (mainDefender.status === ArmyStatus.RETREATING) {
+        // TODO: 处理防御方溃退逻辑
+        console.log(`[溃退处理] 防御方 ${mainDefender.armyId} 溃退，需实现返回逻辑。暂时恢复为驻扎。`);
+        await ctx.database.set('army', { armyId: mainDefender.armyId }, { status: ArmyStatus.GARRISONED, targetRegionId: undefined, marchEndTime: undefined });
+    } else if (battleReport.result.winner === mainDefender.armyId && mainDefender.status === ArmyStatus.DEFENDING) {
+        // 防御方胜利，恢复驻扎
+        await ctx.database.set('army', { armyId: mainDefender.armyId }, { status: ArmyStatus.GARRISONED });
+        console.log(`[战斗胜利] 防御方 ${mainDefender.armyId} 胜利，已在 ${region.RegionId} 转为驻扎。`);
     }
+
+    // 对于僵持的情况，双方都恢复驻扎状态 (或根据游戏规则设定其他状态)
+    if (attackingArmy.status === ArmyStatus.STALEMATE) {
+        await ctx.database.set('army', { armyId: attackingArmy.armyId }, { status: ArmyStatus.GARRISONED });
+    }
+    if (mainDefender.status === ArmyStatus.STALEMATE) {
+        await ctx.database.set('army', { armyId: mainDefender.armyId }, { status: ArmyStatus.GARRISONED });
+    }
+
+    console.log(`[战斗结束] 军队 ${attackingArmy.armyId} 与 ${defendingArmies.map(d => d.armyId).join(', ')} 在地区 ${region.RegionId} 的战斗流程处理完毕。`);
 }
+
+// 示例：如何调用战斗 (需要完整的 Army 和 Region 对象)
+/*
+
+// 示例：如何调用战斗 (需要完整的 Army 和 Region 对象)
+/*
+const sampleAttackingArmy: Army = {
+    armyId: 'attacker_1',
+    name: '第一攻击集团军',
+    commanderId: 'player1',
+    regionId: 'region_A',
+    manpower: 10000,
+    equipment: { InfantryEquipment: 100 }, // 100件步兵装备
+    foodSupply: 1000,
+    organization: 5000, // 初始组织度，会被重新计算或使用
+    status: ArmyStatus.MARCHING,
+};
+
+const sampleDefendingArmy: Army = {
+    armyId: 'defender_1',
+    name: '第一防御集团军',
+    commanderId: 'player2',
+    regionId: 'region_B',
+    manpower: 8000,
+    equipment: { InfantryEquipment: 80 },
+    foodSupply: 800,
+    organization: 4000,
+    status: ArmyStatus.DEFENDING,
+};
+
+const sampleRegion: Region = {
+    regionId: 'region_B',
+    name: '中部平原',
+    terrain: TerrainType.PLAIN,
+    owner: 'player2',
+    // ... 其他地区属性
+    manpower: 100000,
+    resources: { food: 100, wood: 100, stone: 100, iron: 50, oil: 20, gold:10, coal:10, steel:10, rareMetal:10, rubber:10, aluminum:10, uranium:10 },
+    buildings: { farm: 5, mine: 2, factory: 1, port:0, airport:0, railway:0, fortress:0, cfactory:0, mfactory:0, shipyard:0, researchInstitute:0, nuclearPlant:0, rocketSilo:0, radarStation:0, barracks:0, militaryAcademy:0, supplyDepot:0, hospital:0, propagandaCenter:0, secretPoliceHQ:0, university:0, bank:0, stockExchange:0, tradeCenter:0, residentialArea:0, commercialDistrict:0, industrialZone:0, administrativeCenter:0, culturalCenter:0, entertainmentDistrict:0, sportsComplex:0, park:0, natureReserve:0, historicalSite:0, landmark:0, wonder:0, spaceElevator:0, dysonSphere:0, stellarEngine:0, wormholeGenerator:0, interdimensionalPortal:0, realityAnchor:0, godEmperorStatue:0, blackHoleGenerator:0, timeMachine:0, wishGranter:0, philosopherStone:0, holyGrail:0, fountainOfYouth:0, elDorado:0, shangriLa:0, atlantis:0, camelot:0, valhalla:0, olympus:0, gardenOfEden:0, heaven:0, hell:0, purgatory:0, limbo:0, void:0, abyss:0, chaos:0, order:0, dream:0, nightmare:0, illusion:0, reality:0, truth:0, lie:0, paradox:0, singularity:0, infinity:0, eternity:0, oblivion:0, nirvana:0, enlightenment:0, transcendence:0, apotheosis:0, deification:0, godhood:0 },
+    developmentLevel: 5,
+    infrastructureLevel: 3,
+    stability: 0.8,
+    supportRate: 0.7,
+    population: 500000,
+    maxPopulation: 1000000,
+    growthRate: 0.01,
+    unemploymentRate: 0.05,
+    crimeRate: 0.02,
+    educationLevel: 0.6,
+    healthLevel: 0.7,
+    culture: 'default',
+    religion: 'none',
+    pollutionLevel: 0.1,
+    resourceConsumption: { food: 200 },
+    resourceProduction: { food: 250 },
+    taxRate: 0.1,
+    revenue: 1000,
+    expenses: 500,
+    budget: 500,
+    debt: 0,
+    gdp: 1000000,
+    gdpPerCapita: 2,
+    inflationRate: 0.02,
+    economicGrowthRate: 0.03,
+    tradeBalance: 100,
+    foreignInvestment: 50,
+    nationalHappiness: 0.7,
+    politicalFreedom: 0.6,
+    civilLiberties: 0.5,
+    corruptionIndex: 0.3,
+    governmentEffectiveness: 0.6,
+    ruleOfLaw: 0.7,
+    militaryStrength: 1000,
+    navalStrength: 100,
+    airForceStrength: 200,
+    spaceForceStrength: 0,
+    technologicalLevel: 5,
+    researchPoints: 100,
+    espionagePoints: 50,
+    diplomacyPoints: 30,
+    influencePoints: 20,
+    prestige: 50,
+    warWeariness: 0.1,
+    rebellionRisk: 0.05,
+    autonomyLevel: 1,
+    isCapital: false,
+    isCoastal: false,
+    hasPort: false,
+    hasAirport: false,
+    hasRailway: false,
+    hasFortress: false,
+    hasResources: ['food', 'wood', 'stone'],
+    connectedRegions: ['region_A', 'region_C'],
+    garrison: null,
+    events: [],
+    modifiers: [],
+    constructions: [],
+    lastUpdated: Date.now(),
+    warehouse: { food: 10000, wood: 5000, stone: 5000, iron: 1000, oil: 500, gold:100, coal:100, steel:100, rareMetal:100, rubber:100, aluminum:100, uranium:100 },
+    militarywarehouse: { InfantryEquipment: 1000, Tank: 100 },
+    labor: 50000,
+    cfactory: 10,
+    mfactory: 5,
+    shipyard: 1,
+    researchInstitute: 2,
+    nuclearPlant: 0,
+    rocketSilo: 0,
+    radarStation: 1,
+    barracks: 5,
+    militaryAcademy: 1,
+    supplyDepot: 3,
+    hospital: 2,
+    propagandaCenter: 1,
+    secretPoliceHQ: 1,
+    university: 3,
+    bank: 2,
+    stockExchange: 1,
+    tradeCenter: 2,
+    residentialArea: 10,
+    commercialDistrict: 5,
+    industrialZone: 5,
+    administrativeCenter: 1,
+    culturalCenter: 1,
+    entertainmentDistrict: 2,
+    sportsComplex: 1,
+    park: 3,
+    natureReserve: 1,
+    historicalSite: 1,
+    landmark: 1,
+    wonder: 0,
+    spaceElevator: 0,
+    dysonSphere: 0,
+    stellarEngine: 0,
+    wormholeGenerator: 0,
+    interdimensionalPortal: 0,
+    realityAnchor: 0,
+    godEmperorStatue: 0,
+    blackHoleGenerator: 0,
+    timeMachine: 0,
+    wishGranter: 0,
+    philosopherStone: 0,
+    holyGrail: 0,
+    fountainOfYouth: 0,
+    elDorado: 0,
+    shangriLa: 0,
+    atlantis: 0,
+    camelot: 0,
+    valhalla: 0,
+    olympus: 0,
+    gardenOfEden: 0,
+    heaven: 0,
+    hell: 0,
+    purgatory: 0,
+    limbo: 0,
+    void: 0,
+    abyss: 0,
+    chaos: 0,
+    order: 0,
+    dream: 0,
+    nightmare: 0,
+    illusion: 0,
+    reality: 0,
+    truth: 0,
+    lie: 0,
+    paradox: 0,
+    singularity: 0,
+    infinity: 0,
+    eternity: 0,
+    oblivion: 0,
+    nirvana: 0,
+    enlightenment: 0,
+    transcendence: 0,
+    apotheosis: 0,
+    deification: 0,
+    godhood: 0,
+};
+
+const report = conductBattle(sampleAttackingArmy, sampleDefendingArmy, sampleRegion);
+console.log('战斗报告:', JSON.stringify(report, null, 2));
+console.log('攻击方最终状态:', sampleAttackingArmy);
+console.log('防御方最终状态:', sampleDefendingArmy);
+*/

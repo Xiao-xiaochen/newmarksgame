@@ -169,8 +169,9 @@ export class RegionInitializer {
   // 初始化数据库中的所有地区
   public async initializeAllRegionsInDatabase(ctx: Context): Promise<void> {
     const regions = this.generateAllRegions();
-    const batch = [];
-    
+    const regionEntries: Partial<Region>[] = [];
+    const regionCoordinates: { [key: string]: { x: number, y: number } } = {};
+
     // 统计各类地形数量
     const stats = {
       [TerrainType.OCEAN]: 0,
@@ -182,7 +183,11 @@ export class RegionInitializer {
     
     for (const [regionId, terrainType] of regions.entries()) {
       stats[terrainType]++;
-      
+
+      const x = parseInt(regionId.substring(0, 2), 10);
+      const y = parseInt(regionId.substring(2, 4), 10);
+      regionCoordinates[regionId] = { x, y };
+
       let maxbase = 0;
       let initialPopulation = 0;
       const resources = { // 初始化资源对象
@@ -198,74 +203,152 @@ export class RegionInitializer {
       switch (terrainType) {
         case TerrainType.OCEAN:
           maxbase = 0;
-          initialPopulation = 0; // 海洋无人居住
-          // 海洋资源可以后续添加，例如渔业资源等
+          initialPopulation = 0;
           break;
-        case TerrainType.MOUNTAIN:
-          maxbase = 20;
-          initialPopulation = Math.floor(50000 + Math.random() * 50000); // 基础5万，随机0-5万
-          resources.rareMetal = Math.floor(Math.random() * 60000);
-          resources.rareEarth = Math.floor(Math.random() * 30000);
-          resources.ironOre = Math.floor(Math.random() * 150000) + 30000;
-          break;
-        case TerrainType.HILLS:
-          maxbase = 40;
-          initialPopulation = Math.floor(100000 + Math.random() * 100000); // 基础10万，随机0-10万
-          resources.coal = Math.floor(Math.random() * 200000) + 50000;
-          resources.ironOre = Math.floor(Math.random() * 100000) + 20000;
+        case TerrainType.PLAIN:
+          maxbase = 100;
+          initialPopulation = 500;
+          resources.ironOre = Math.floor(Math.random() * 50) + 20; // 平原少量铁矿
+          resources.coal = Math.floor(Math.random() * 30) + 10;    // 平原少量煤炭
           break;
         case TerrainType.FOREST:
           maxbase = 60;
-          initialPopulation = Math.floor(150000 + Math.random() * 150000);
-          // 可以添加木材等森林特有资源
+          initialPopulation = 200;
+          resources.coal = Math.floor(Math.random() * 70) + 30;    // 森林较多煤炭 (来自木材)
+          resources.aluminum = Math.floor(Math.random() * 20) + 5; // 森林少量铝土
           break;
-        case TerrainType.PLAIN:
+        case TerrainType.HILLS:
           maxbase = 80;
-          initialPopulation = Math.floor(200000 + Math.random() * 300000);
-          resources.oil = Math.floor(Math.random() * 100000);
-          resources.aluminum = Math.floor(Math.random() * 80000) + 20000;
-          // 平原适合农业，可以考虑添加食物资源或加成
+          initialPopulation = 300;
+          resources.ironOre = Math.floor(Math.random() * 100) + 50; // 丘陵多铁矿
+          resources.rareEarth = Math.floor(Math.random() * 30) + 10; // 丘陵少量稀土
+          resources.coal = Math.floor(Math.random() * 50) + 20;    // 丘陵中量煤炭
+          break;
+        case TerrainType.MOUNTAIN:
+          maxbase = 40;
+          initialPopulation = 100;
+          resources.rareMetal = Math.floor(Math.random() * 80) + 40; // 山脉多稀有金属
+          resources.rareEarth = Math.floor(Math.random() * 60) + 30; // 山脉多稀土
+          resources.ironOre = Math.floor(Math.random() * 40) + 10;   // 山脉少量铁矿
           break;
       }
-      
-      // 创建地区数据 (确保 Region 类型和数据库模型已更新)
-      const regionData: Partial<Region> = {
+
+      regionEntries.push({
+        // Fields from Region interface in types.ts
         RegionId: regionId,
-        Terrain: terrainType, // 使用 Terrain 字段存储地形类型
-        maxbase: maxbase,             // 基础设施上限
-        population: initialPopulation, // 初始人口 (使用 population 字段存储)
-        resources: resources,         // 资源储量
-        // 移除旧的、分散的 terrain 对象
-        // terrain: { ... } // 移除此行
-        // 其他字段根据需要初始化，例如 owner, leader 等可以留空或设为默认值
-        owner: '',
-        leader: '',
-        labor: 0, // 初始劳动力可以设为0或基于人口计算
-        base: 0, // 初始基础设施为0
+        guildId: 'SYSTEM_INIT', // Placeholder string, as guildId is string type
+        owner: 'NEUTRAL',       // Placeholder string, as owner is string type
+        leader: 'NONE',         // Placeholder string, as leader is string type
+        x: x,
+        y: y,
+        Terrain: terrainType,
+        population: initialPopulation,
+        maxbase: maxbase,
+        resources: resources, // Resource deposits in the ground
+        hasRiver: false,      // Default, TODO: implement river generation logic
+        isCoastal: false,     // Default, will be calculated in the next loop
+
+        // Other required fields from Region, initialized
+        factoryAllocation: {},
+        militaryIndustry: 0,
+        labor: Math.floor(initialPopulation * 0.4), // Example labor calculation
+        Busylabor: 0,
+        base: 0,
         Department: 0,
-        farms: 0,
-      };
-      
-      batch.push(regionData);
-      
-      // 每500条数据批量插入一次
-      if (batch.length >= 500) {
-        // 使用 upsert 确保数据可以被覆盖更新，如果需要的话
-        await ctx.database.upsert('regiondata', batch.map(data => ({ ...data, guildId: data.RegionId })), 'guildId');
-        batch.length = 0;
+        Constructioncapacity: 0,
+        farms: 0, // Simplified initialization, can be refined later
+        mfactory: 0,
+        busymfactory: 0,
+        Mine: 0,
+        oilwell: 0,
+        busyoilwell: 0,
+        steelmill: 0,
+        busysteelmill: 0,
+
+        warehouseCapacity: 300, // Default value
+        OwarehouseCapacity: 0,
+        militarywarehouseCapacity: 300, // Default value
+        OmilitarywarehouseCapacity: 0,
+
+        warehouse: { // Stored resources, all initialized to 0
+          food: 0, goods: 0, rubber: 0, Mazout: 0, Diesel: 0,
+          fuel: 0, Asphalt: 0, Gas: 0, rareMetal: 0, rareEarth: 0,
+          coal: 0, ironOre: 0, steel: 0, aluminum: 0, oil: 0,
+        },
+        militarywarehouse: { // Stored military units/equipment, all initialized to 0
+          bomb: 0, car: 0, Tank: 0, AntiTankGun: 0, Artillery: 0,
+          AWACS: 0, HeavyFighter: 0, InfantryEquipment: 0, LightFighter: 0,
+          StrategicBomber: 0, TacticalBomber: 0, Transportaircraft: 0,
+        },
+
+        // Optional fields from Region, initialized to defaults or omitted if undefined is acceptable
+        lightIndustry: 0,
+        refinery: 0,
+        powerPlant: 0,    // As per types.ts, placeholder for future functionality
+        concretePlant: 0,
+        machineryPlant: 0,
+        miningAllocation: {},
+        laborAllocation: {},
+        // lastHourlyReport is optional and will be undefined if not set here
+      });
+    }
+
+    // 计算邻近地区和沿海状态
+    for (const regionEntry of regionEntries) {
+      const { x, y, RegionId } = regionEntry;
+      const adjacentIds = [];
+      let isCoastal = false;
+
+      const neighbors = [
+        { dx: -1, dy: 0 }, { dx: 1, dy: 0 }, // 左右
+        { dx: 0, dy: -1 }, { dx: 0, dy: 1 }, // 上下
+        { dx: -1, dy: -1 }, { dx: 1, dy: -1 }, // 左上，右上
+        { dx: -1, dy: 1 }, { dx: 1, dy: 1 }  // 左下，右下
+      ];
+
+      for (const neighbor of neighbors) {
+        const nx = x + neighbor.dx;
+        const ny = y + neighbor.dy;
+
+        if (nx >= 0 && nx < this.mapSize && ny >= 0 && ny < this.mapSize) {
+          const neighborId = nx.toString().padStart(2, '0') + ny.toString().padStart(2, '0');
+          adjacentIds.push(neighborId);
+          const neighborTerrain = regions.get(neighborId);
+          if (neighborTerrain === TerrainType.OCEAN && regionEntry.Terrain !== TerrainType.OCEAN) {
+            isCoastal = true;
+          }
+        }
+      }
+      regionEntry.adjacentRegionIds = adjacentIds;
+      regionEntry.isCoastal = isCoastal; // 设置沿海状态
+      // TODO: 实现河流生成逻辑并设置 hasRiver
+    }
+
+    // 批量插入或更新数据库
+    if (regionEntries.length > 0) {
+      try {
+        // 先删除所有旧的地区数据，确保从干净的状态开始
+        await ctx.database.remove('regiondata', {});
+        console.log('已删除所有旧的地区数据。');
+
+        // 分批插入新的地区数据
+        const batchSize = 100; // 根据数据库和驱动的限制调整批次大小
+        for (let i = 0; i < regionEntries.length; i += batchSize) {
+          const batch = regionEntries.slice(i, i + batchSize);
+          await ctx.database.upsert('regiondata', batch);
+        }
+        console.log(`成功初始化 ${regionEntries.length} 个地区到数据库。`);
+      } catch (error) {
+        console.error('批量初始化地区数据到数据库失败:', error);
+        // 可以考虑更细致的错误处理，比如重试或记录失败的批次
       }
     }
-    
-    // 插入剩余数据
-    if (batch.length > 0) {
-      await ctx.database.upsert('regiondata', batch.map(data => ({ ...data, guildId: data.RegionId })), 'guildId');
-    }
-    
-    console.log('地区初始化完成，地形分布统计：', stats);
-    return;
+
+    // 打印地形统计信息
+    console.log('地形统计:', stats);
   }
-  
-  // 生成世界地图数据
+
+  // 生成世界地图的二维数组表示
   public generateWorldMap(): TerrainType[][] {
     const map: TerrainType[][] = [];
     

@@ -157,7 +157,12 @@ export interface Region {
   RegionId: string; // 地区ID (主键, e.g., "4604")
   guildId: string;  // 所属频道ID (如果需要区分不同服务器)
   owner: string;    // 控制者 (国家名称 或 null)
-  leader: string;   // 地区领导者 (用户ID 或 null)
+    leader: string;   // 地区领导者 (用户ID 或 null)
+  adjacentRegionIds?: string | string[]; // 相邻地区ID列表 (可选)
+  x?: number; // 新增: 地区X坐标
+  y?: number; // 新增: 地区Y坐标
+  isCoastal?: boolean; // 新增: 是否沿海
+  hasRiver?: boolean; // 新增: 是否有河流
 
   population: number;   // 总人口
   labor: number;     // 地区劳动力
@@ -171,6 +176,7 @@ export interface Region {
   Department: number;           // 地区建筑部门数量 (不再是等级)
   Constructioncapacity: number; // 地区累积的总建造力
   // constructionQueue?: string;   // 移除: 不再使用建造队列
+  lastHourlyReport?: string; // 新增: 上一次小时结算生成的报告文本
 
   // --- 建筑/设施数量 ---
   farms: number;        // 农场
@@ -269,12 +275,71 @@ export interface Army {
 }
 
 export enum ArmyStatus {
+  IDLE = '空闲',
   GARRISONED = '驻扎中',
   MARCHING = '行军中',
   FIGHTING = '战斗中',
+  OCCUPYING = '占领中',
+  DEFENDING = '防御中',
+  RETREATING = '撤退中',
+  STALEMATE = '僵持中',
   // 可以添加更多状态, 如 REORGANIZING (整顿中), SIEGING (围攻中)
 }
 
+
+// --- 战斗相关类型 ---
+export enum BattlePhase {
+  INITIAL_ENGAGEMENT = 'Initial Engagement',
+  MAIN_COMBAT = 'Main Combat',
+  PROTRACTED_COMBAT = 'Protracted Combat',
+  // 可以根据需要添加更多阶段
+}
+
+export interface BattleReportParticipantInfo {
+  armyId: string;
+  name: string;
+  initialManpower: number;
+  initialOrganization?: number; // 组织度可能在初始时未完全确定或允许后续计算
+}
+
+export interface BattleRoundStats {
+  manpower: number;
+  organization: number;
+}
+
+export interface BattleRoundLosses {
+  manpower: number;
+  organization: number;
+}
+
+export interface BattleRound {
+  phase: BattlePhase;
+  attackerStats: BattleRoundStats;
+  defenderStats: BattleRoundStats;
+  attackerLosses: BattleRoundLosses;
+  defenderLosses: BattleRoundLosses;
+  log: string[];
+}
+
+export interface BattleResult {
+  winner: string | null; // 胜者军队ID，或 null 表示僵持
+  reason: string; // 战斗结果的原因
+  finalAttackerManpower: number;
+  finalAttackerOrganization: number;
+  finalDefenderManpower: number;
+  finalDefenderOrganization: number;
+}
+
+export interface BattleReport {
+  attacker: BattleReportParticipantInfo;
+  defender: BattleReportParticipantInfo;
+  regionId: string;
+  terrain: TerrainType;
+  startTime: number; //战斗开始时间戳
+  endTime?: number; // 战斗结束时间戳
+  rounds: BattleRound[];
+  result: BattleResult;
+}
 
 // --- 配置项 ---
 

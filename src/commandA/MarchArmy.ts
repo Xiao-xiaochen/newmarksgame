@@ -70,6 +70,89 @@ export function MarchArmy(ctx: Context) {
         }
         const targetRegion: Region = targetRegionResult[0];
 
+        // 6.1 检查目标地区是否相邻
+        console.log(`[行军检查] Initial raw adjacentRegionIds for region ${currentRegionId}:`, currentRegion.adjacentRegionIds, `(type: ${typeof currentRegion.adjacentRegionIds})`);
+
+        let isAdjacent = false;
+        let adjacentRegionsForDisplay: string[] = [];
+        const rawAdjacentIds = currentRegion.adjacentRegionIds;
+
+        // 获取当前地区和目标地区的坐标
+        const currentX = currentRegion.x;
+        const currentY = currentRegion.y;
+        const targetX = targetRegion.x;
+        const targetY = targetRegion.y;
+
+        if (typeof rawAdjacentIds === 'string') {
+            const trimmedIdsString = rawAdjacentIds.trim();
+            if (trimmedIdsString === '') {
+                console.log(`[行军检查] adjacentRegionIds for region ${currentRegionId} is an empty or whitespace-only string. Raw: "${rawAdjacentIds}"`);
+            } else {
+                adjacentRegionsForDisplay = trimmedIdsString.split(',').map(id => id.trim()).filter(id => id);
+                console.log(`[行军检查] Parsed from string for region ${currentRegionId}: [${adjacentRegionsForDisplay.join(', ')}]`);
+                if (adjacentRegionsForDisplay.length === 0) {
+                    console.log(`[行军检查] String parsing for region ${currentRegionId} (original: "${trimmedIdsString}") resulted in an empty list of adjacent regions.`);
+                }
+            }
+        } else if (Array.isArray(rawAdjacentIds)) {
+            if (rawAdjacentIds.length === 0) {
+                console.log(`[行军检查] adjacentRegionIds for region ${currentRegionId} is an empty array.`);
+            } else {
+                adjacentRegionsForDisplay = rawAdjacentIds
+                    .map(id => String(id).trim()) // 确保是字符串并去除首尾空格
+                    .filter(id => id !== '');    // 过滤掉处理后的空字符串
+                console.log(`[行军检查] Parsed from array for region ${currentRegionId}: [${adjacentRegionsForDisplay.join(', ')}]`);
+                if (adjacentRegionsForDisplay.length === 0) {
+                    console.log(`[行军检查] Array processing for region ${currentRegionId} (original: ${JSON.stringify(rawAdjacentIds)}) resulted in an empty list of adjacent regions.`);
+                }
+            }
+        } else if (rawAdjacentIds === null || rawAdjacentIds === undefined) {
+            console.log(`[行军检查] adjacentRegionIds for region ${currentRegionId} is ${rawAdjacentIds === null ? 'null' : 'undefined'}.`);
+        } else {
+            // 其他意外类型
+            console.log(`[行军检查] adjacentRegionIds for region ${currentRegionId} has an unexpected type: ${typeof rawAdjacentIds}. Raw value: ${JSON.stringify(rawAdjacentIds)}`);
+        }
+        
+        if (adjacentRegionsForDisplay.length > 0) {
+            isAdjacent = adjacentRegionsForDisplay.includes(targetRegionId);
+        } else {
+            // 如果 adjacentRegionIds 为空或解析后为空，则尝试通过坐标判断
+            console.log(`[行军检查] adjacentRegionIds 为空，尝试通过坐标判断相邻性。当前地区 (${currentRegionId}): (${currentX}, ${currentY}), 目标地区 (${targetRegionId}): (${targetX}, ${targetY})`);
+            if (currentX !== undefined && currentY !== undefined && targetX !== undefined && targetY !== undefined) {
+                const dx = Math.abs(currentX - targetX);
+                const dy = Math.abs(currentY - targetY);
+                // 使用曼哈顿距离或切比雪夫距离为1来判断是否相邻
+                // 曼哈顿距离: dx + dy === 1
+                // 切比雪夫距离: Math.max(dx, dy) === 1
+                // 这里我们使用切比雪夫距离，允许对角线相邻
+                if (Math.max(dx, dy) === 1) {
+                    isAdjacent = true;
+                    console.log(`[行军检查] 通过坐标判断，地区 ${currentRegionId} 和 ${targetRegionId} 相邻。`);
+                } else {
+                    console.log(`[行军检查] 通过坐标判断，地区 ${currentRegionId} 和 ${targetRegionId} 不相邻 (dx=${dx}, dy=${dy})。`);
+                }
+            } else {
+                console.log(`[行军检查] 地区 ${currentRegionId} 或 ${targetRegionId} 缺少坐标信息，无法通过坐标判断相邻性。`);
+            }
+        }
+
+        console.log(`[行军检查] Final check for region ${currentRegionId}: Parsed adjacent regions: [${adjacentRegionsForDisplay.join(', ')}]. Target: ${targetRegionId}. Is adjacent: ${isAdjacent}`);
+
+        if (!isAdjacent) {
+          const adjacentList = adjacentRegionsForDisplay.length > 0 ? adjacentRegionsForDisplay.join(', ') : '无 (或未配置坐标)';
+          let message = `目标地区 ${targetRegionId} 不是当前地区 ${currentRegionId} 的相邻地区。
+`;
+          if (adjacentRegionsForDisplay.length > 0) {
+            message += `当前地区识别的相邻地区列表为: [${adjacentList}]。
+`;
+          } else if (currentRegion.x === undefined || currentRegion.y === undefined || targetRegion.x === undefined || targetRegion.y === undefined) {
+            message += `无法通过坐标判断相邻性，因为一个或两个地区缺少坐标信息。
+`;
+          }
+          message += `请检查地区数据配置，确保相邻地区已正确设置或地区坐标已填写。`;
+          return message;
+        }
+
         // 7. 计算行军时间
         const terrain = targetRegion.Terrain || TerrainType.PLAIN; // 目标地区地形决定行军速度修正
         const terrainModifiers = INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS[terrain] || {};

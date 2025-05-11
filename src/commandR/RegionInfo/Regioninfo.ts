@@ -1,4 +1,4 @@
-import { Context } from 'koishi';
+import { Context, Query } from 'koishi'; // 导入 Query
 // 移除未使用的 TRandom 导入
 // import { TRandom } from '../../utils/Random';
 // --- 修改：导入 Army ---
@@ -35,28 +35,28 @@ ${username} 同志！
 `.trim();
       }
 
-      let query: Partial<Region> = {}; // 初始化查询对象
+      let dbQuery: Query<Region>; // 使用 Query<Region> 类型
 
       try {
         if (identifier) {
           // 如果提供了标识符
           if (/^\d{4}$/.test(identifier)) {
             // 如果是4位数字，按 RegionId 查询
-            query = { RegionId: identifier };
+            dbQuery = { RegionId: identifier };
           } else {
             // 否则，按 guildId 查询
-            query = { guildId: identifier };
+            dbQuery = { guildId: identifier };
           }
         } else if (session.guildId) {
           // 如果没有提供标识符，但在群聊中，按当前 guildId 查询
-          query = { guildId: session.guildId };
+          dbQuery = { guildId: session.guildId };
         } else {
           // 如果既没有标识符，也不在群聊中，则无法确定查询目标
           return '请提供地区编号或群号，或者在已绑定地区的群聊中使用此命令。';
         }
 
         // 执行数据库查询
-        const regionDataResult = await ctx.database.get('regiondata', query);
+        const regionDataResult = await ctx.database.get('regiondata', dbQuery);
 
         // 检查是否找到地区
         if (!regionDataResult || regionDataResult.length === 0) {

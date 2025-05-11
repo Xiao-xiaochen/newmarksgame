@@ -107,6 +107,8 @@ export function Database(ctx: Context) {
     guildId: { type: 'string', length: 255, nullable: true }, // 绑定的频道ID
     owner: { type: 'string', length: 255, nullable: true }, // 控制者 (国家名称 或 null)
     leader: { type: 'string', length: 255, nullable: true }, // 地区领导者 (用户ID 或 null)
+    x: { type: 'unsigned', initial: 0 }, // X 坐标
+    y: { type: 'unsigned', initial: 0 }, // Y 坐标
 
     // --- 人口与劳动力 ---
     population: { type: 'unsigned', initial: 0 },

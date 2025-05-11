@@ -299,21 +299,29 @@ export async function performHourlyUpdateLogic(ctx: Context) {
             );
         }
 
-        // --- 9. 发送报告 ---
+        // --- 9. 存储报告 ---
         const fullReport = reportMessages.join('\n');
-        // 确保 guildId 是有效的字符串并且平台前缀正确
-        if (guildId && typeof guildId === 'string' && guildId.length >= 4) {
-             const channelIdWithPlatform = `onebot:${guildId}`; // 根据你的 Koishi 配置调整平台前缀
-             ctx.broadcast([channelIdWithPlatform], fullReport).catch(err => {
-               console.warn(`[报告发送失败] 无法发送报告到频道 ${channelIdWithPlatform} (地区 ${regionId}):`, err.message);
-                 // 可以根据错误类型进行更具体的处理，例如检查机器人是否在群组中
-               if (err.response?.status === 404 || err.message.includes('channel not found')) {
-                   console.error(`[报告发送错误] 频道 ${channelIdWithPlatform} 未找到或机器人不在该群组。`);
-                     // 可能需要标记该地区或通知管理员
-               }
-             });
+
+        // 检查 guildId 是否为四位数字符串。
+        // 循环开始时已确保 guildId 是字符串且长度至少为4 (如果执行到此处)。
+        const isFourDigitChannelId = /^\d{4}$/.test(guildId);
+
+        if (isFourDigitChannelId) {
+            console.log(`[地区报告跳过] 地区 ${regionId} (频道 ${guildId}) 的频道ID为四位数，报告将不被存储。`);
+            // 对于四位数的 guildId，不将报告存储到 updatedRegionData.lastHourlyReport
         } else {
-             console.warn(`[报告跳过] 地区 ${regionId} 的 guildId (${guildId}) 无效，无法发送报告。`);
+            updatedRegionData.lastHourlyReport = fullReport; // 将报告存储到待更新数据中
+            // 对于非四位数的有效 guildId，记录报告已生成并准备存储
+            console.log(`[地区报告已生成] 地区 ${regionId} (频道 ${guildId}) 的报告已生成并准备存储。`);
+            // 此处无需原先的 else (console.warn)，因为无效/过短的 guildId 已在循环开头被 continue。
+            // 如果代码执行到这里，guildId 被认为是有效的（非四位数，且通过了初始检查）。
+        }
+
+        // 移除广播逻辑，只在控制台记录报告已生成
+        if (guildId && typeof guildId === 'string' && guildId.length >= 4) {
+            console.log(`[地区报告已生成] 地区 ${regionId} (频道 ${guildId}) 的报告已生成并准备存储。`);
+        } else {
+            console.warn(`[报告生成记录] 地区 ${regionId} 的 guildId (${guildId}) 无效，但报告仍已生成。`);
         }
 
     } // 结束 for...of 循环处理单个地区

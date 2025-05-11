@@ -34,6 +34,7 @@ import { Regioninfo } from "./commandR/RegionInfo/Regioninfo";
 import { ResourceInfo } from "./commandR/RegionInfo/ResourceInfo";
 import { Laborinfo } from "./commandR/RegionInfo/Laborinfo";
 import { RegionPopulation } from "./commandR/RegionInfo/RegionPopulation"; // 地区人口
+import { ReadRegionReportCommand } from './commandR/RegionInfo/ReadRegionReport'; // <--- 导入阅读地区报告指令
 import { RFarmCheckIn } from "./commandR/CheckIn/FarmCheckIn"; // 地区农业签到
 import { GeneralBuild } from "./commandR/GeneralBuild"; // 通用建造
 import { RegionProduce } from './commandR/Produce'; // 地区生产
@@ -110,6 +111,7 @@ export function apply(ctx: Context) {
     ResourceInfo(ctx);      // 地区资源信息
     Laborinfo(ctx);         // 地区劳动力信息
     RegionPopulation(ctx);  // 地区人口信息
+    ReadRegionReportCommand(ctx); // 阅读地区报告
     RFarmCheckIn(ctx);      // 地区农业签到
     GeneralBuild(ctx);      // 地区通用建造
     RegionProduce(ctx);     // 地区生产

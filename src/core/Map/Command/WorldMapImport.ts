@@ -132,21 +132,86 @@ export function WorldMapImport(ctx: Context) {
 
 
         // 准备要插入/更新的数据
+        const xCoord = parseInt(regionId.substring(0, 2), 10);
+        const yCoord = parseInt(regionId.substring(2, 4), 10);
+
         const regionData: Partial<Region> = {
           RegionId: regionId,
           guildId: regionId, // 使用 RegionId 作为 guildId 进行 upsert 查找
-          Terrain: terrainType,
-          maxbase: maxbase,
-          population: initialPopulation,
-          resources: resources, // <--- 使用新计算的资源
-          // 设置其他字段的默认值
           owner: '',
           leader: '',
-          labor: Math.floor(initialPopulation * 0.6), // 简单计算初始劳动力
+          Terrain: terrainType,
+          x: xCoord,
+          y: yCoord,
+          population: initialPopulation,
+          maxbase: maxbase,
           base: 0,
+          labor: Math.floor(initialPopulation * 0.6), // 初始劳动力
+          Busylabor: 0, // 初始繁忙劳动力
           Department: 0,
-          // 农场计算可以保持不变或根据新的资源/人口逻辑调整
+          Constructioncapacity: 0, // 初始建设能力
           farms: Math.max(1, Math.floor((initialPopulation / 30000) * ( (terrainType === TerrainType.PLAIN ? 0.8 : terrainType === TerrainType.FOREST ? 0.5 : terrainType === TerrainType.HILLS ? 0.3 : 0.1) * 0.7 + 0.3))),
+          resources: resources, // 地下资源
+          
+          // 新增字段，确保符合 Region 接口
+          factoryAllocation: {},
+          militaryIndustry: 0,
+          adjacentRegionIds: [], // HTML导入时通常不包含此信息，默认为空
+          isCoastal: false,      // HTML导入时通常不包含此信息，默认为false
+          hasRiver: false,       // HTML导入时通常不包含此信息，默认为false
+          lastHourlyReport: '',
+
+          mfactory: 0,
+          busymfactory: 0,
+          Mine: 0,
+          oilwell: 0,
+          busyoilwell: 0,
+          steelmill: 0,
+          busysteelmill: 0,
+          lightIndustry: 0,
+          refinery: 0,
+          powerPlant: 0,
+          concretePlant: 0,
+          machineryPlant: 0,
+          miningAllocation: {},
+          laborAllocation: {},
+
+          warehouseCapacity: 300, // 默认仓库容量
+          OwarehouseCapacity: 0,
+          militarywarehouseCapacity: 300, // 默认军事仓库容量
+          OmilitarywarehouseCapacity: 0,
+
+          warehouse: {
+            food: 0,
+            goods: 0,
+            rubber: 0,
+            Mazout: 0,
+            Diesel: 0,
+            fuel: 0,
+            Asphalt: 0,
+            Gas: 0,
+            rareMetal: 0,
+            rareEarth: 0,
+            coal: 0,
+            ironOre: 0,
+            steel: 0,
+            aluminum: 0,
+            oil: 0,
+          },
+          militarywarehouse: {
+            bomb: 0,
+            car: 0,
+            Tank: 0,
+            AntiTankGun: 0,
+            Artillery: 0,
+            AWACS: 0,
+            HeavyFighter: 0,
+            InfantryEquipment: 0,
+            LightFighter: 0,
+            StrategicBomber: 0,
+            TacticalBomber: 0,
+            Transportaircraft: 0,
+          },
         };
         regionsToUpsert.push(regionData);
         parsedCount++;

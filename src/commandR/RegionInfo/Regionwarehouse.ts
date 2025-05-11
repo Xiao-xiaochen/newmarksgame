@@ -1,4 +1,4 @@
-import { Context, Session } from 'koishi';
+import { Context, Session, Query } from 'koishi'; // 导入 Query
 import { Region, userdata } from '../../types'; // 导入 Region 和 userdata 类型
 
 // 辅助函数：格式化仓库内容 (可复用或单独定义)
@@ -60,7 +60,7 @@ export function RegionWarehouse(ctx: Context) {
       const userId = session.userId;
       const username = session.author.name || '未知用户';
 
-      let query: Partial<Region> = {}; // 初始化查询对象
+      let dbQuery: Query<Region>; // 使用 Query<Region> 类型
       let isRemoteViewById = false; // 标记是否通过 RegionId 远程查看
 
       try {
@@ -78,17 +78,17 @@ ${username} 同志！
         if (identifier) {
           if (/^\d{4}$/.test(identifier)) {
             // 按 RegionId 查询
-            query = { RegionId: identifier };
+            dbQuery = { RegionId: identifier };
             isRemoteViewById = true; // 通过ID查看，需要权限检查
           } else {
             // 按 guildId 查询
-            query = { guildId: identifier };
+            dbQuery = { guildId: identifier };
             // 按群号查看，也视为远程，但权限检查可能不同或不需要？暂定需要
             // isRemoteViewById = true; // 或者根据你的规则决定是否检查权限
           }
         } else if (session.guildId) {
           // 按当前 guildId 查询 (本地查看)
-          query = { guildId: session.guildId };
+          dbQuery = { guildId: session.guildId };
           isRemoteViewById = false; // 本地查看，通常权限要求较低或无
         } else {
           return '请提供地区编号或群号，或者在已绑定地区的群聊中使用此命令。';
@@ -96,7 +96,7 @@ ${username} 同志！
         // --- 查询条件确定完毕 ---
 
         // 执行数据库查询
-        const regionDataResult = await ctx.database.get('regiondata', query);
+        const regionDataResult = await ctx.database.get('regiondata', dbQuery);
 
         // 检查是否找到地区
         if (!regionDataResult || regionDataResult.length === 0) {
@@ -127,7 +127,7 @@ ${username} 同志！
 
         const output = `
 =====[ 地区仓库 ]=====
-地区编号: ${regionData.RegionId} ${query.guildId === session.guildId && !identifier ? '(当前频道绑定)' : ''}
+地区编号: ${regionData.RegionId} ${dbQuery.guildId === session.guildId && !identifier ? '(当前频道绑定)' : ''}
 所属群聊: ${regionData.guildId || '未绑定'}
 ${civilianOutput}
 `.trim();
@@ -135,7 +135,7 @@ ${civilianOutput}
         return output;
 
       } catch (error) {
-        console.error(`查询地区仓库信息时出错 (查询: ${JSON.stringify(query)}, 用户: ${userId}):`, error);
+        console.error(`查询地区仓库信息时出错 (查询: ${JSON.stringify(dbQuery)}, 用户: ${userId}):`, error);
         return '查询地区仓库信息时发生内部错误。';
       }
     });
