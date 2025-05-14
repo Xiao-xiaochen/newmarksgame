@@ -1,10 +1,11 @@
-import { Context, segment } from 'koishi'; // 导入 segment
+import { Context, segment ,Time} from 'koishi'; // 导入 segment
 import { userdata, Country } from '../types'; // 确保导入 userdata 和 Country 类型
 import path from 'path'; // 导入 path 模块用于处理路径
 
 // 用于存储待确认的国家解散请求 { userId: timestamp }
 const pendingDismissConfirmations: Record<string, number> = {};
-const DismissTimeout = 30 * 1000; // 确认超时时间：30秒
+// config
+// DismissCountryTimeout:number 解散国家超时时间
 
 export function Dismisscountry(ctx: Context) {
   ctx.command('解散国家', '解散你领导的国家 (仅限领袖)', { authority: 1 }) // 基础权限1，代码内检查领袖身份
@@ -31,7 +32,7 @@ export function Dismisscountry(ctx: Context) {
         const countryName = leaderData.countryName;
 
         // 检查是否有待确认的请求且未超时
-        if (pendingDismissConfirmations[leaderId] && (now - pendingDismissConfirmations[leaderId] < DismissTimeout)) {
+        if (pendingDismissConfirmations[leaderId] && (now - pendingDismissConfirmations[leaderId] < ctx.config.DismissCountryTimeout*Time.second)) {
           // --- 开始执行解散操作 ---
           console.log(`用户 ${leaderName} (${leaderId}) 确认解散国家 ${countryName}。`);
 
@@ -106,14 +107,14 @@ export function Dismisscountry(ctx: Context) {
               });
               console.log(`用户 ${leaderName} (${leaderId}) 的解散国家 ${countryName} 确认已超时。`);
             }
-          }, DismissTimeout);
+          }, ctx.config.DismissCountryTimeout*Time.second);
 
           return `
 =====[确认操作]=====
 ${leaderName} 同志！
 警告：此操作将解散国家 【${countryName}】！
 所有成员将失去国家归属，所有控制地区将被释放！
-请在 ${DismissTimeout / 1000} 秒内再次输入 :
+请在 ${ctx.config.DismissCountryTimeout*Time.second / 1000} 秒内再次输入 :
 '解散国家' 命令以确认。
 `.trim();
           // --- 用户确认结束 ---

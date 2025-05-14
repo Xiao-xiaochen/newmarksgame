@@ -5,7 +5,8 @@ import { calculateDistance } from '../utils/ChebyshevDistance'; // 导入计算�
 // --- 临时邀请存储 ---
 // 使用 Map 存储待处理的邀请: Map<targetUserId, { inviterId: string, inviterName: string, countryName: string, timestamp: number }>
 const pendingInvites = new Map<string, { inviterId: string, inviterName: string, countryName: string, timestamp: number }>();
-const INVITE_TIMEOUT = 60 * 1000; // 邀请有效时间：60秒
+//config
+//InviteTimeout:number 邀请超时时间
 
 // 辅助函数：获取一个地区的所有相邻地区ID (保持不变)
 function getAdjacentRegions(regionId: string): string[] {
@@ -115,13 +116,13 @@ export function Invite(ctx: Context) {
                          // 可以选择性地通知邀请者邀请已过期
                          // ctx.bots[session.platform + ':' + session.selfId]?.sendMessage(session.channelId, `${leaderName} 同志，你对 ${targetUserId} 的邀请已过期。`);
                     }
-                }, INVITE_TIMEOUT);
+                }, ctx.config.InviteTimeout*Time.second);
 
 
                 // 5. 发送邀请通知和操作指引
                 // 尝试 @ 目标用户
                 const mention = h('at', { id: targetUserId });
-                const message = `${mention}，${leaderName} 邀请你加入国家 【${countryName}】。\n请在 ${INVITE_TIMEOUT / 1000} 秒内使用命令 “接受邀请” 或 “拒绝邀请” 进行回复。`;
+                const message = `${mention}，${leaderName} 邀请你加入国家 【${countryName}】。\n请在 ${ctx.config.InviteTimeout} 秒内使用命令 “接受邀请” 或 “拒绝邀请” 进行回复。`;
 
                 // 尝试发送消息，如果失败则仅在当前频道提示
                 try {
@@ -131,7 +132,7 @@ export function Invite(ctx: Context) {
                     await session.send(message);
                 } catch (e) {
                     console.warn(`发送邀请通知给 ${targetUserId} 失败:`, e);
-                    await session.send(`已向 ${targetUserId} 发出邀请。请目标用户在 ${INVITE_TIMEOUT / 1000} 秒内使用命令 “接受邀请” 或 “拒绝邀请” 进行回复。`);
+                    await session.send(`已向 ${targetUserId} 发出邀请。请目标用户在 ${ctx.config.InviteTimeout} 秒内使用命令 “接受邀请” 或 “拒绝邀请” 进行回复。`);
                 }
 
                 // --- 修改：提供更清晰的用户名 ---
@@ -157,7 +158,7 @@ export function Invite(ctx: Context) {
             }
 
             // 检查邀请是否超时 (保持不变)
-            if (Date.now() - invite.timestamp > INVITE_TIMEOUT) {
+            if (Date.now() - invite.timestamp > ctx.config.InviteTimeout*Time.second) {
                 pendingInvites.delete(targetUserId); // 清除过期邀请
                 return '邀请已过期。';
             }
@@ -287,7 +288,7 @@ ${assignedRegionMessage}
              }
 
              // 检查邀请是否超时 (虽然超时会自动清除，但用户可能在超时后立即尝试拒绝)
-             if (Date.now() - invite.timestamp > INVITE_TIMEOUT) {
+             if (Date.now() - invite.timestamp > ctx.config.InviteTimeout*Time.second) {
                  pendingInvites.delete(targetUserId); // 清除过期邀请
                  return '邀请已过期。';
              }

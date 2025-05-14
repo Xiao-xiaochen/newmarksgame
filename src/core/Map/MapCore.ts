@@ -4,7 +4,7 @@ import { RegionInitializer } from './RegionInitializer';
 import { RegionManager } from './Region';
 import * as fs from 'fs';
 import * as path from 'path';
-import {Config} from '../../Schema'
+import {Config} from '../../Config'
 import {TerrainRenderer} from './TerrainRenderer';
 
 

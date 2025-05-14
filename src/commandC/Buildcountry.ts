@@ -6,8 +6,8 @@ import { Region, TerrainType, userdata } from '../types'; // 导入 userdata 类
 import { validateCountryName } from '../utils/Namecheck'; // 导入国家名称验证函数
 import { calculateDistance } from '../utils/ChebyshevDistance'; // 导入计算距离的函数
 
-// --- 新增：建国冷却时间 (例如：24小时) ---
-const BUILD_COUNTRY_COOLDOWN = 72 * Time.hour; // 单位：毫秒
+//config
+//BuildCountryCooldown:number 建国冷却时间
 
 export function Buildcountry(ctx: Context) {
   ctx.command('组建国家 [countryName:string]')
@@ -72,8 +72,8 @@ ${username} 同志！
         if (userInfo.lastCountryLeaveTimestamp) {
           const now = Date.now();
           const timeSinceLastLeave = now - userInfo.lastCountryLeaveTimestamp;
-          if (timeSinceLastLeave < BUILD_COUNTRY_COOLDOWN) {
-            const remainingTime = BUILD_COUNTRY_COOLDOWN - timeSinceLastLeave;
+          if (timeSinceLastLeave < ctx.config.BuildCountryCooldown*Time.hour) {
+            const remainingTime = ctx.config.BuildCountryCooldown*Time.hour - timeSinceLastLeave;
             const remainingTimeString = Time.format(remainingTime); // 格式化剩余时间
             return `
 ======[国家]=====
