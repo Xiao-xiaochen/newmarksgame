@@ -10,7 +10,7 @@ import { WorldMap } from '../MapCore';
 
 export function WorldMapInfo(ctx: Context) {
   // 获取世界地图单例
-  const worldMap = WorldMap.getInstance();
+  const worldMap = WorldMap.getInstance(ctx);
   // renderer 不再需要，可以注释或删除
   // const renderer = new TerrainRenderer();
 

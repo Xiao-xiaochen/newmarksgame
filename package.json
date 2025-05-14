@@ -6,6 +6,12 @@
     "Xiao-xiaochen <xiaochen18217@gmail.com>",
     "ChuanYuanNotBoat "
   ],
+  "main": "src/index.ts",
+  "typings": "src/index.d.ts",
+  "files": [
+    "lib",
+    "dist"
+  ],
   "license": "MIT",
   "homepage": "https://github.com/Xiao-xiaochen/newmarksgame",
   "repository": {
