@@ -3,7 +3,8 @@ import { Country } from '../types'; // 导入需要的类型
 import { validateCountryName } from '../utils/Namecheck'; // 导入国家名称验证函数
 
 // --- 新增：改名冷却时间 (72小时) ---
-const RENAME_COOLDOWN = 72 * Time.hour; // 单位：毫秒
+//config
+//RenameCooldown:number 改名冷却时间
 
 export function ChangenName(ctx: Context) {
   // --- 修改命令名称和描述 ---
@@ -57,8 +58,8 @@ export function ChangenName(ctx: Context) {
 
         // --- 新增：冷却时间检查 ---
         const now = Date.now();
-        if (targetCountry.lastRenameTimestamp && (now - targetCountry.lastRenameTimestamp < RENAME_COOLDOWN)) {
-          const remainingTime = Time.format(RENAME_COOLDOWN - (now - targetCountry.lastRenameTimestamp));
+        if (targetCountry.lastRenameTimestamp && (now - targetCountry.lastRenameTimestamp < ctx.config.RenameCooldown*Time.hour)) {
+          const remainingTime = Time.format(ctx.config.RenameCooldown*Time.hour - (now - targetCountry.lastRenameTimestamp));
           return `国家名称修改冷却中，剩余时间：${remainingTime}。`;
         }
         // --- 冷却检查结束 ---

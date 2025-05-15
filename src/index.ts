@@ -10,7 +10,7 @@ import { CountryReset } from './core/CountryReset'; // <--- 导入新命令
 import { ManualCheckIn } from './commandP/ManualCheckIn'; // <--- 导入手动重置指令
 import { HelpCommand } from './utils/help'; // <--- 导入帮助指令
 import { handleArmyArrival } from './core/ArmyActions'; // <--- 导入军队到达处理函数
-
+import { Config } from "./Config"; // <--- 导入配置文件
 // --- 地图相关 ---
 import { InitializeRegions } from './core/Map/Command/InitializeRegions';
 import { WorldMapImport } from './core/Map/Command/WorldMapImport';
@@ -77,7 +77,7 @@ import { ForceChangenName } from "./commandC/ForceChangenName";
 export const inject = {
   required: ['database', 'puppeteer', 'cron']
 }
-
+export * from 'koishi-plugin-newmarksgame/src/Config'; // <--- 导入配置文件
 export function apply(ctx: Context) {
 
     // --- 核心服务 ---

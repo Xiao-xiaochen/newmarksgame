@@ -15,7 +15,7 @@ export function InitializeRegions(ctx: Context) {
         const username = session.author?.name || '未知用户';
         
         // 获取世界地图单例
-        const worldMap = WorldMap.getInstance();
+        const worldMap = WorldMap.getInstance(ctx);
         
         // 检查是否已经初始化
         if (worldMap.isInitialized()) {

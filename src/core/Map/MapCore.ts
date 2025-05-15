@@ -4,6 +4,9 @@ import { RegionInitializer } from './RegionInitializer';
 import { RegionManager } from './Region';
 import * as fs from 'fs';
 import * as path from 'path';
+import {Config} from '../../Config'
+import {TerrainRenderer} from './TerrainRenderer';
+
 
 /**
  * 世界地图单例类 - 管理游戏中的唯一地图实例
@@ -15,20 +18,22 @@ export class WorldMap {
   private regionInitializer: RegionInitializer;
   private regionManager: RegionManager;
   private mapFilePath: string = '';
-  
-  private constructor() {
+  private seed:string='';
+  private constructor(ctx:Context) {
     // 使用固定种子确保地图一致性
-    const seed = 'EarthLike2023';
-    this.regionInitializer = new RegionInitializer(seed);
-    this.regionManager = new RegionManager(seed);
+    
+    let config=ctx.config;
+    this.seed = config.mapSeed;
+    this.regionInitializer = new RegionInitializer(this.seed);
+    this.regionManager = new RegionManager(this.seed);
   }
   
   /**
    * 获取WorldMap单例实例
    */
-  public static getInstance(): WorldMap {
+  public static getInstance(ctx:Context): WorldMap {
     if (!WorldMap.instance) {
-      WorldMap.instance = new WorldMap();
+      WorldMap.instance = new WorldMap(ctx);
     }
     return WorldMap.instance;
   }
@@ -71,7 +76,7 @@ export class WorldMap {
         const mapJson = fs.readFileSync(this.mapFilePath, 'utf8');
         this.mapData = JSON.parse(mapJson);
         this.initialized = true;
-        return true;
+        return true;  
       }
     } catch (error) {
       console.error('加载地图文件失败:', error);
@@ -87,11 +92,11 @@ export class WorldMap {
       console.log('世界地图已经初始化，跳过初始化过程');
       return false;
     }
-    
+
     try {
       // 初始化所有地区数据
       await this.regionInitializer.initializeAllRegionsInDatabase(ctx);
-      
+      console.log(`尝试以seed:${this.seed}生成世界`);
       // 生成地图数据
       this.mapData = this.regionInitializer.generateWorldMap();
       
@@ -103,7 +108,8 @@ export class WorldMap {
       
       this.mapFilePath = path.join(mapDataDir, 'world_map.json');
       fs.writeFileSync(this.mapFilePath, JSON.stringify(this.mapData), 'utf8');
-      
+      var renderer = new TerrainRenderer();
+      renderer.saveHtmlToFile(renderer.generateMapHtml(this.mapData), path.resolve(__dirname, '.', 'Map.html'));
       this.initialized = true;
       return true;
     } catch (error) {

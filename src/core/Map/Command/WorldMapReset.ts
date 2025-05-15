@@ -22,7 +22,7 @@ export function WorldMapReset(ctx: Context) {
       if (pendingConfirmations[userId] && (now - pendingConfirmations[userId] < WaitingTimeout)) {
         try {
           console.log(`用户 ${username} (${userId}) 确认重置世界地图。`);
-          const worldMap = WorldMap.getInstance();
+          const worldMap = WorldMap.getInstance(ctx);
 
           // 1. 删除地图文件
           const mapDataPath = path.join(path.resolve(ctx.baseDir, 'data'), 'world_map.json');
@@ -32,12 +32,20 @@ export function WorldMapReset(ctx: Context) {
           } else {
             console.log('地图文件不存在，无需删除。');
           }
+          // 2. 删除地图 HTML 文件
+          const mapHtmlPath = path.resolve(__dirname, '..', 'Map.html');
+          if (fs.existsSync(mapHtmlPath)) {
+            fs.unlinkSync(mapHtmlPath);
+            console.log(`已删除地图 HTML 文件: ${mapHtmlPath}`);
+          } else {
+            console.log(`${mapHtmlPath} 地图 HTML 文件不存在，无需删除。`);
+          }
 
-          // 2. 清空数据库中的地区数据
+          // 3. 清空数据库中的地区数据
           const removedCount = await ctx.database.remove('regiondata', {});
           console.log(`已从数据库删除 ${removedCount} 条地区数据。`);
 
-          // 3. 重置 WorldMap 实例状态
+          // 4. 重置 WorldMap 实例状态
           worldMap.resetInitialization();
 
           // 清除确认状态

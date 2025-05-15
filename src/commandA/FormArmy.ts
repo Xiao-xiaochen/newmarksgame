@@ -1,9 +1,10 @@
 import { Context, Session } from 'koishi';
 import { Region, userdata, Army, ArmyStatus } from '../types'; // 导入所需类型
 
-const MAX_ARMIES_PER_REGION = 9; // 每个地区最多9支军队
-const INITIAL_ARMY_MANPOWER = 0; // 初始兵力
-const INITIAL_ARMY_FOOD = 0;     // 初始粮食
+//config
+//MaxArmiesPerRegion:number; //每个地区最大军队
+//InitialArmyManPower:number; //地区初始兵力
+//InitialArmyFood:number;  //地区初始食物
 
 export function FormArmy(ctx: Context) {
   ctx.command('组建军队', '在当前地区组建一支新的陆军部队')
@@ -47,8 +48,8 @@ export function FormArmy(ctx: Context) {
 
         // 4. 检查军队数量限制
         const existingArmies = await ctx.database.get('army', { regionId: regionId });
-        if (existingArmies.length >= MAX_ARMIES_PER_REGION) {
-          return `地区 ${regionId} 的军队数量已达上限 (${MAX_ARMIES_PER_REGION}支)。`;
+        if (existingArmies.length >= ctx.config.MaxArmiesPerRegion) {
+          return `地区 ${regionId} 的军队数量已达上限 (${ctx.config.MaxArmiesPerRegion}支)。`;
         }
 
         // 5. 生成新的军队ID和名称，并处理可能的并发冲突
@@ -63,10 +64,10 @@ export function FormArmy(ctx: Context) {
 
             // 在每次尝试前重新获取当前地区的军队，以获取最新状态应对并发
             const currentArmiesInRegion = await ctx.database.get('army', { regionId: regionId });
-            if (currentArmiesInRegion.length >= MAX_ARMIES_PER_REGION) {
+            if (currentArmiesInRegion.length >= ctx.config.MaxArmiesPerRegion) {
                 // 如果在第一次尝试时就满了，直接返回
                 // 如果是重试时发现满了，说明在并发情况下其他请求成功创建了军队
-                return `地区 ${regionId} 的军队数量已达上限 (${MAX_ARMIES_PER_REGION}支)。`;
+                return `地区 ${regionId} 的军队数量已达上限 (${ctx.config.MaxArmiesPerRegion}支)。`;
             }
 
             let nextArmyIndex = 1;
@@ -87,14 +88,14 @@ export function FormArmy(ctx: Context) {
             }
 
             // 安全检查，防止 nextArmyIndex 超出合理范围
-            // 理论上，如果 currentArmiesInRegion.length < MAX_ARMIES_PER_REGION，总能找到一个 <= MAX_ARMIES_PER_REGION 的可用 nextArmyIndex
-            if (nextArmyIndex > MAX_ARMIES_PER_REGION) {
-                 // 这种情况通常不应该发生，除非 MAX_ARMIES_PER_REGION 设置得非常小，
+            // 理论上，如果 currentArmiesInRegion.length < ctx.config.MaxArmiesPerRegion，总能找到一个 <= ctx.config.MaxArmiesPerRegion 的可用 nextArmyIndex
+            if (nextArmyIndex > ctx.config.MaxArmiesPerRegion) {
+                 // 这种情况通常不应该发生，除非 ctx.config.MaxArmiesPerRegion 设置得非常小，
                  // 或者 existingIndices 的计算逻辑有误，或者数据库中存在不符合 "regionId + 数字序号" 格式的脏数据
-                console.warn(`Calculated nextArmyIndex ${nextArmyIndex} for region ${regionId} which is > MAX_ARMIES_PER_REGION ${MAX_ARMIES_PER_REGION}. Army count: ${currentArmiesInRegion.length}. Indices: ${Array.from(existingIndices).join(',')}`);
-                // 尝试寻找一个在[1, MAX_ARMIES_PER_REGION]范围内未被占用的序号作为回退
+                console.warn(`Calculated nextArmyIndex ${nextArmyIndex} for region ${regionId} which is > ctx.config.MaxArmiesPerRegion ${ctx.config.MaxArmiesPerRegion}. Army count: ${currentArmiesInRegion.length}. Indices: ${Array.from(existingIndices).join(',')}`);
+                // 尝试寻找一个在[1, ctx.config.MaxArmiesPerRegion]范围内未被占用的序号作为回退
                 let fallbackIndexFound = false;
-                for (let i = 1; i <= MAX_ARMIES_PER_REGION; i++) {
+                for (let i = 1; i <= ctx.config.MaxArmiesPerRegion; i++) {
                     if (!existingIndices.has(i)) {
                         nextArmyIndex = i;
                         fallbackIndexFound = true;
@@ -103,7 +104,7 @@ export function FormArmy(ctx: Context) {
                 }
                 if (!fallbackIndexFound) {
                     // 如果连回退都找不到（例如所有1-9的序号都被非标准ID占用了），则确实无法创建
-                    return `无法为地区 ${regionId} 的新军队找到合适的编号 (${MAX_ARMIES_PER_REGION}个已满或冲突)，请检查数据或联系管理员。`;
+                    return `无法为地区 ${regionId} 的新军队找到合适的编号 (${ctx.config.MaxArmiesPerRegion}个已满或冲突)，请检查数据或联系管理员。`;
                 }
             }
 
@@ -115,9 +116,9 @@ export function FormArmy(ctx: Context) {
                 name: newArmyName,
                 commanderId: userId,
                 regionId: regionId,
-                manpower: INITIAL_ARMY_MANPOWER,
+                manpower: ctx.config.InitialArmyManPower,
                 equipment: {},
-                foodSupply: INITIAL_ARMY_FOOD,
+                foodSupply: ctx.config.InitialArmyFood,
                 status: ArmyStatus.GARRISONED,
                 targetRegionId: undefined,
                 marchEndTime: undefined,

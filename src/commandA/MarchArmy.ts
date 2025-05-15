@@ -4,8 +4,8 @@ import { findArmyByTarget } from '../utils/ArmyUtils';
 import { INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS } from '../core/equipmentStats';
 import { handleArmyArrival } from '../core/ArmyActions'; // 导入到达处理函数
 
-// --- 常量定义 ---
-const BASE_MARCH_TIME_MINUTES = 30; // 基础行军时间（分钟）
+//cofig
+//BaseMarchTimeMinutes:number   //基础行军时间(分钟)
 
 export function MarchArmy(ctx: Context) {
   ctx.command('行军 <armyTarget:string> <targetRegionId:string>', '命令指定军队向目标地区行军')
@@ -163,7 +163,7 @@ export function MarchArmy(ctx: Context) {
              return `目标地区 ${targetRegionId} 的地形 (${terrain}) 无法通行。`;
         }
 
-        const marchDurationMinutes = BASE_MARCH_TIME_MINUTES / speedModifier; // 基础时间 / 速度修正 (修正为正数表示速度倍率)
+        const marchDurationMinutes = ctx.config.BaseMarchTimeMinutes / speedModifier; // 基础时间 / 速度修正 (修正为正数表示速度倍率)
         const marchEndTime = Date.now() + marchDurationMinutes * Time.minute; // 计算到达时间戳
 
         // 8. 更新军队状态并设置定时器

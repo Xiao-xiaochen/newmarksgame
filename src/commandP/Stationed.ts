@@ -4,8 +4,9 @@ import { Time } from 'koishi'; // 导入 Time 用于格式化时间
 
 // 用于存储待确认的驻扎请求 { userId: { regionId: string, timestamp: number } }
 const pendingStationConfirmations: Record<string, { regionId: string; timestamp: number }> = {};
-const STATION_TIMEOUT = 30 * 1000; // 确认超时时间：30秒
-const STATION_COOLDOWN = 7 * 24 * 60 * 60 * 1000; // 驻扎冷却时间：3天
+//config
+//StationTimeout 驻扎超时时间
+//StationCooldown// 驻扎冷却时间
 
 export function Stationed(ctx: Context) {
   ctx.command('驻扎', '驻扎到当前群聊绑定的地区')
@@ -50,14 +51,14 @@ export function Stationed(ctx: Context) {
         }
 
         // 4. 检查驻扎冷却时间
-        if (user.lastStationTimestamp && (now - user.lastStationTimestamp < STATION_COOLDOWN)) {
-          const remainingTime = Time.format(STATION_COOLDOWN - (now - user.lastStationTimestamp));
+        if (user.lastStationTimestamp && (now - user.lastStationTimestamp < ctx.config.StationCooldown*Time.hour)) {
+          const remainingTime = Time.format(ctx.config.StationCooldown*Time.hour - (now - user.lastStationTimestamp));
           return `驻扎冷却中，距离下次可驻扎还有 ${remainingTime}。`;
         }
 
         // 5. 检查确认状态
         const pendingConfirmation = pendingStationConfirmations[userId];
-        if (pendingConfirmation && pendingConfirmation.regionId === targetRegionId && (now - pendingConfirmation.timestamp < STATION_TIMEOUT)) {
+        if (pendingConfirmation && pendingConfirmation.regionId === targetRegionId && (now - pendingConfirmation.timestamp < ctx.config.StationTimeout*Time.second)) {
           // --- 执行驻扎操作 ---
           console.log(`用户 ${username} (${userId}) 确认驻扎到地区 ${targetRegionId}。`);
 
@@ -89,14 +90,14 @@ export function Stationed(ctx: Context) {
               });
               console.log(`用户 ${username} (${userId}) 的驻扎地区 ${targetRegionId} 确认已超时。`);
             }
-          }, STATION_TIMEOUT);
+          }, ctx.config.StationTimeout*Time.second);
 
           return `
 =====[确认操作]=====
 ${username} 同志！
 您将驻扎到地区 【${targetRegionId}】。
-驻扎后，您将在 ${Time.format(STATION_COOLDOWN)} 内无法更改驻扎地。
-请在 ${STATION_TIMEOUT / 1000} 秒内再次输入 :
+驻扎后，您将在 ${Time.format(ctx.config.StationCooldown)}小时 内无法更改驻扎地。
+请在 ${ctx.config.StationTimeout} 秒内再次输入 :
 '驻扎' 命令以确认。
 `.trim();
           // --- 用户确认结束 ---
