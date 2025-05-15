@@ -37,15 +37,23 @@ export async function performHourlyUpdateLogic(ctx: Context) {
 
     for (const region of regions) {
         const regionId = region.RegionId;
-        const guildId = region.guildId;
+        const guildId = String(region.guildId || ''); // 确保guildId是字符串，并处理可能为null的情况
 
-        // --- Guild ID 有效性检查 ---
-        if (!guildId || String(guildId).length < 4) {
-            // console.log(`[结算跳过] 地区 ${regionId} 的 guildId (${guildId}) 无效或过短。`);
+        // --- Guild ID 有效性检查 (排除完全无效的) ---
+        if (!guildId || guildId.length < 4) {
+            // console.log(`[结算跳过] 地区 ${regionId} 的 guildId (${guildId}) 格式无效或过短。`);
             continue;
         }
 
-        // 初始化报告和更新数据
+        const isUnclaimedMapTile = /^\d{4}$/.test(guildId) && (!region.owner || region.owner === '');
+
+        if (isUnclaimedMapTile) {
+            // 对于没有玩家管理的地区，完全不进行任何计算和更新
+            // console.log(`[结算跳过] 无人区 ${regionId} (频道 ${guildId})，不进行任何计算。`);
+            continue; 
+        }
+
+        // --- 现有完整逻辑：针对玩家控制的地区 ---
         const reportMessages: string[] = []; // 清空，重新构建
         const updatedRegionData: Partial<Region> = {}; // 初始化为空对象
         const tempRegionStateForBaseCalc: Partial<Region> = { ...region }; // 提前声明和初始化
@@ -334,32 +342,13 @@ export async function performHourlyUpdateLogic(ctx: Context) {
             );
         }
 
-        // --- 9. 存储报告 ---
+        // --- 9. 存储报告 (仅为玩家控制的地区) ---
         const fullReport = reportMessages.join('\n');
+        // 此时已确保不是 isUnclaimedMapTile，所以 guildId 对应的地区是被玩家管理的
+        updatedRegionData.lastHourlyReport = fullReport;
+        // console.log(`[地区报告已生成并存储] 地区 ${regionId} (频道 ${guildId})`);
 
-        // 检查 guildId 是否为四位数字符串。
-        // 循环开始时已确保 guildId 是字符串且长度至少为4 (如果执行到此处)。
-        const isFourDigitChannelId = /^\d{4}$/.test(guildId);
-
-        if (isFourDigitChannelId) {
-            console.log(`[地区报告跳过] 地区 ${regionId} (频道 ${guildId}) 的频道ID为四位数，报告将不被存储。`);
-            // 对于四位数的 guildId，不将报告存储到 updatedRegionData.lastHourlyReport
-        } else {
-            updatedRegionData.lastHourlyReport = fullReport; // 将报告存储到待更新数据中
-            // 对于非四位数的有效 guildId，记录报告已生成并准备存储
-            console.log(`[地区报告已生成] 地区 ${regionId} (频道 ${guildId}) 的报告已生成并准备存储。`);
-            // 此处无需原先的 else (console.warn)，因为无效/过短的 guildId 已在循环开头被 continue。
-            // 如果代码执行到这里，guildId 被认为是有效的（非四位数，且通过了初始检查）。
-        }
-
-        // 移除广播逻辑，只在控制台记录报告已生成
-        if (guildId && typeof guildId === 'string' && guildId.length >= 4) {
-            console.log(`[地区报告已生成] 地区 ${regionId} (频道 ${guildId}) 的报告已生成并准备存储。`);
-        } else {
-            console.warn(`[报告生成记录] 地区 ${regionId} 的 guildId (${guildId}) 无效，但报告仍已生成。`);
-        }
-
-    } // 结束 for...of 循环处理单个地区
+    } // 结束 for...of 循环处理单个地区 (玩家控制的地区分支)
 
     // --- 10. 等待所有数据库更新完成 ---
     try {
