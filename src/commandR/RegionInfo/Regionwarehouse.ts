@@ -1,6 +1,46 @@
 import { Context, Session, Query } from 'koishi'; // 导入 Query
 import { Region, userdata } from '../../types'; // 导入 Region 和 userdata 类型
 
+// 新增：资源名称映射函数
+function getResourceName(key: string): string {
+  const nameMap: Record<string, string> = {
+    // 生活物资
+    food: '粮食',
+    goods: '商品',
+    // 工业原料/产品
+    rubber: '橡胶',
+    Mazout: '重油',
+    Diesel: '柴油',
+    fuel: '燃料',
+    Asphalt: '沥青',
+    Gas: '天然气',
+    // 矿产/金属
+    rareMetal: '稀有金属',
+    rareEarth: '稀土',
+    coal: '煤炭',
+    ironOre: '铁矿石',
+    steel: '钢铁',
+    aluminum: '铝',
+    oil: '石油',
+    // 军事装备 (如果也在这里显示)
+    bomb: '炸弹',
+    car: '车辆',
+    Tank: '坦克',
+    AntiTankGun: '反坦克炮',
+    Artillery: '火炮',
+    AWACS: '预警机',
+    HeavyFighter: '重型战斗机',
+    InfantryEquipment: '步兵装备',
+    LightFighter: '轻型战斗机',
+    StrategicBomber: '战略轰炸机',
+    TacticalBomber: '战术轰炸机',
+    Transportaircraft: '运输机',
+    // 其他可能出现的key
+    stone: '石料' // 示例：如果石料是可能的key
+  };
+  return nameMap[key] || key; // 如果找不到映射，返回原始key
+}
+
 // 辅助函数：格式化仓库内容 (可复用或单独定义)
 // 注意：这里假设 Region 接口有 warehouse, warehouseCapacity, OwarehouseCapacity 字段
 function formatRegionWarehouse(title: string, warehouse: object | null | undefined, capacity: number | undefined, occupied: number | undefined): string {
@@ -9,7 +49,7 @@ function formatRegionWarehouse(title: string, warehouse: object | null | undefin
   }
   const items = Object.entries(warehouse)
     .filter(([key, value]) => typeof value === 'number' && value > 0)
-    .map(([key, value]) => `  -${key}: ${value}`)
+    .map(([key, value]) => `  -${getResourceName(key)}: ${value}`) // 使用 getResourceName
     .join('\n');
 
   const capacityInfo = `容量: ${occupied ?? '?'} / ${capacity ?? '?'}`; // 使用 ?? 处理 undefined

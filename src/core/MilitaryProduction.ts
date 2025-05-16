@@ -1,7 +1,6 @@
 import { MilitaryItemConfig, Region } from "../types";
-import { hasEnoughWarehouseSpace } from "../utils/Warehouse";
 
-// 军事物品配置
+// 定义军事单位及其生产所需资源和劳动力
 export const MILITARY_ITEMS: Record<string, MilitaryItemConfig> = {
   '坦克': {
     name: '坦克',
@@ -175,44 +174,84 @@ export function produce(
   const producedAmount = config.output * actualBatches;
   const newItems: Record<string, number> = {};
   newItems[productKey] = producedAmount;
-  const warehouseCheck = hasEnoughWarehouseSpace(region, newItems); // 假设 hasEnoughWarehouseSpace 接受这种格式
-  if (!warehouseCheck.hasSpace) {
-    return { success: false, message: `仓库空间不足，生产 ${producedAmount} 单位 ${itemName} (存入 ${productKey}) 需额外空间：${warehouseCheck.needed}，当前可用：${warehouseCheck.available}` };
-  }
+  // 仓库容量检查逻辑已被移除，因此删除相关代码
+  // const warehouseCheck = hasEnoughWarehouseSpace(region, newItems);
+  // if (!warehouseCheck.hasSpace) {
+  //   return { success: false, message: `仓库空间不足，生产 ${producedAmount} 单位 ${itemName} (存入 ${productKey}) 需额外空间：${warehouseCheck.needed}，当前可用：${warehouseCheck.available}` };
+  // }
 
-  // 计算资源扣除与产出
-  const updatedWarehouse = { ...region.warehouse };
-  for (const [res, amount] of Object.entries(totalResourceNeed)) {
-    updatedWarehouse[res] -= amount;
-  }
-  // 劳动力扣除应基于实际参与生产的工厂数量，即 config.factoriesRequired * actualBatches * config.laborCost
-  // 或者，如果逻辑是分配了工厂就要消耗劳动力，则用 totalLaborNeedForAssignedFactories
-  // 这里采用后者：分配了就要消耗劳动力
-  const updatedLabor = region.labor - totalLaborNeedForAssignedFactories;
+    // --- 5. 更新地区数据 ---
+    const laborConsumed = laborPerBatch * actualBatches;
+    const currentLabor = region.labor || 0;
+    const currentBusyLabor = region.Busylabor || 0;
+    const currentMFactory = region.mfactory || 0;
+    const currentBusyMFactory = region.busymfactory || 0;
 
-  const updatedMilitaryWarehouse = { ...(region.militarywarehouse || {}) };
-  // 初始化所有可能的键，以避免后续访问 undefined
-  const initialMilitaryWarehouse = {
-    bomb: 0, car: 0, Tank: 0, AntiTankGun: 0, Artillery: 0, AWACS: 0,
-    HeavyFighter: 0, InfantryEquipment: 0, LightFighter: 0,
-    StrategicBomber: 0, TacticalBomber: 0, Transportaircraft: 0,
-    ...updatedMilitaryWarehouse // 用现有值覆盖默认值
-  };
-  initialMilitaryWarehouse[productKey] = (initialMilitaryWarehouse[productKey] || 0) + producedAmount;
+    // 实际消耗的工厂数等于分配的工厂数，因为前面已经检查过 region.mfactory >= factoryCount
+    const factoriesConsumedInThisProduction = factoryCount; 
 
+    const updatedRegionData: Partial<Region> = {
+        labor: currentLabor - laborConsumed,
+        Busylabor: currentBusyLabor + laborConsumed, // 增加繁忙劳动力
+        mfactory: currentMFactory - factoriesConsumedInThisProduction, // 减少可用军工厂
+        busymfactory: currentBusyMFactory + factoriesConsumedInThisProduction, // 增加繁忙军工厂
+        militarywarehouse: {
+            bomb: 0,
+            car: 0,
+            Tank: 0,
+            AntiTankGun: 0,
+            Artillery: 0,
+            AWACS: 0,
+            HeavyFighter: 0,
+            InfantryEquipment: 0,
+            LightFighter: 0,
+            StrategicBomber: 0,
+            TacticalBomber: 0,
+            Transportaircraft: 0,
+            ...(region.militarywarehouse || {}),
+        },
+        warehouse: {
+            food: 0,
+            goods: 0,
+            rubber: 0,
+            Mazout: 0,
+            Diesel: 0,
+            fuel: 0,
+            Asphalt: 0,
+            Gas: 0,
+            rareMetal: 0,
+            rareEarth: 0,
+            coal: 0,
+            ironOre: 0,
+            steel: 0,
+            aluminum: 0,
+            oil: 0,
+            concrete: 0,
+            stone: 0,
+            machinery: 0,
+            ...(region.warehouse || {}),
+        },
+    };
 
-  return {
-    success: true,
-    message: `生产成功：${itemName} +${producedAmount}`,
-    producedAmount: producedAmount, // 返回实际产量
-    resourceCosts: totalResourceNeed, // 返回实际消耗
-    changes: {
-      labor: updatedLabor,
-      warehouse: updatedWarehouse,
-      militarywarehouse: initialMilitaryWarehouse,
-      // 可以考虑更新 busymfactory 字段
-      // busymfactory: (region.busymfactory || 0) + config.factoriesRequired * actualBatches,
-      // mfactory: region.mfactory - config.factoriesRequired * actualBatches, // 如果工厂被消耗或标记为忙碌
+    // 更新军事仓库库存
+    // const productWarehouseKey = PRODUCT_TO_WAREHOUSE_KEY[itemName]; // 使用 itemName
+    if (productKey && updatedRegionData.militarywarehouse) { // 使用已定义的 productKey
+        const currentMilitaryWarehouseStock = (region.militarywarehouse as any)?.[productKey] || 0;
+        updatedRegionData.militarywarehouse[productKey] = currentMilitaryWarehouseStock + producedAmount;
     }
-  };
+
+    // 从普通仓库扣除消耗的资源
+    for (const [resource, cost] of Object.entries(totalResourceNeed)) { // 使用 totalResourceNeed
+        if (updatedRegionData.warehouse && updatedRegionData.warehouse[resource] !== undefined) {
+            (updatedRegionData.warehouse[resource] as number) -= cost;
+        }
+    }
+
+    return {
+        success: true,
+        message: "生产成功",
+        producedAmount: producedAmount,
+        resourceCosts: totalResourceNeed, // 返回总资源消耗
+        changes: updatedRegionData, // 返回需要更新到数据库的变更
+    };
 }

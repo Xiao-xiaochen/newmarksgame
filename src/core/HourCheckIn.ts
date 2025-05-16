@@ -234,6 +234,39 @@ export async function performHourlyUpdateLogic(ctx: Context) {
         consumptionSummary['food'] = actualFoodConsumed;
         consumptionSummary['goods'] = actualGoodsConsumed;
 
+        // --- 2.5. 军队消耗计算 ---
+        const armiesInRegion = await ctx.database.get('army', { regionId: region.RegionId });
+        let totalArmyFoodConsumption = 0;
+        const armyAttritionUpdates = [];
+
+        for (const army of armiesInRegion) {
+            const armyFoodNeeded = army.manpower * 0.01; // 假设每人每小时消耗0.01单位粮食
+            totalArmyFoodConsumption += armyFoodNeeded;
+
+            if (currentWarehouse.food >= armyFoodNeeded) {
+                currentWarehouse.food -= armyFoodNeeded;
+                consumptionSummary['food'] = (consumptionSummary['food'] || 0) + armyFoodNeeded; // 累加到总消耗
+            } else {
+                // 粮食不足，计算减员
+                const foodShortage = armyFoodNeeded - currentWarehouse.food;
+                currentWarehouse.food = 0; // 仓库粮食耗尽
+                consumptionSummary['food'] = (consumptionSummary['food'] || 0) + (armyFoodNeeded - foodShortage); // 记录实际消耗的粮食
+
+                const attritionRate = 0.05; // 饥饿减员5%
+                const attritionManpower = Math.floor(army.manpower * attritionRate);
+                const newManpower = Math.max(0, army.manpower - attritionManpower);
+
+                armyAttritionUpdates.push(
+                    ctx.database.set('army', { armyId: army.armyId }, { manpower: newManpower })
+                );
+                reportMessages.push(`[军事] ${army.name} (${army.armyId}) 因缺粮减员 ${attritionManpower} 人，剩余 ${newManpower} 人。`);
+            }
+        }
+
+        if (armyAttritionUpdates.length > 0) {
+            await Promise.all(armyAttritionUpdates).catch(err => console.error(`[数据库错误] 更新军队减员数据失败:`, err));
+        }
+
         // --- 3. 人口变化计算 ---
         const foodSupplyPercent = foodNeeded > 0 ? (actualFoodConsumed / foodNeeded) * 100 : 100;
         const goodsSupplyPercent = goodsNeeded > 0 ? (actualGoodsConsumed / goodsNeeded) * 100 : 100;
@@ -331,6 +364,12 @@ export async function performHourlyUpdateLogic(ctx: Context) {
             }
         }
 
+        // --- 9. 存储报告 (仅为玩家控制的地区) ---
+        const fullReport = reportMessages.join('\n');
+        // 此时已确保不是 isUnclaimedMapTile，所以 guildId 对应的地区是被玩家管理的
+        finalUpdateData.lastHourlyReport = fullReport; // Store report in finalUpdateData
+        // console.log(`[地区报告已生成并存储] 地区 ${regionId} (频道 ${guildId})`);
+
         // 只有在有实际数据变动时才添加到更新队列
         if (Object.keys(finalUpdateData).length > 0) {
             updatePromises.push(
@@ -340,13 +379,15 @@ export async function performHourlyUpdateLogic(ctx: Context) {
                         // 可以在这里添加更详细的错误处理或重试逻辑
                     })
             );
+        } else if (fullReport && region.lastHourlyReport !== fullReport) {
+            // Even if no other data changed, if the report content changed, update it.
+            updatePromises.push(
+                ctx.database.set('regiondata', { RegionId: regionId }, { lastHourlyReport: fullReport })
+                    .catch(err => {
+                        console.error(`[数据库错误] 更新地区 ${regionId} 报告失败:`, err);
+                    })
+            );
         }
-
-        // --- 9. 存储报告 (仅为玩家控制的地区) ---
-        const fullReport = reportMessages.join('\n');
-        // 此时已确保不是 isUnclaimedMapTile，所以 guildId 对应的地区是被玩家管理的
-        updatedRegionData.lastHourlyReport = fullReport;
-        // console.log(`[地区报告已生成并存储] 地区 ${regionId} (频道 ${guildId})`);
 
     } // 结束 for...of 循环处理单个地区 (玩家控制的地区分支)
 

@@ -94,17 +94,6 @@ export function RefineOilCommand(ctx: Context) {
                 return `资源不足！\n${missingResources.join('\n')}`;
             }
 
-            // --- 检查仓库容量 ---
-            // 你需要一个方法来计算仓库总容量和当前已用容量
-            // 这里使用占位函数，你需要实现它们
-            const capacity = calculateWarehouseCapacity(region); // 实现这个函数
-            const used = calculateUsedCapacity(currentWarehouse); // 实现这个函数
-            const availableCapacity = capacity - used;
-
-            if (availableCapacity < totalOutputVolume) {
-                return `仓库空间不足！\n需要空间: ${totalOutputVolume}\n可用空间: ${availableCapacity} (当前 ${used}/${capacity})`;
-            }
-
             // --- 执行精炼：更新仓库 ---
             const updatedWarehouse = { ...currentWarehouse };
             // 扣除消耗
@@ -145,15 +134,4 @@ ${consumedText}
 ${producedText}
 `.trim();
         });
-}
-
-// 占位函数 - 你需要根据你的逻辑实现它们
-function calculateWarehouseCapacity(region: Region): number {
-    // 示例：可能基于仓库建筑等级或固定值
-    return region.warehouseCapacity || 100000; // 返回仓库总容量
-}
-
-function calculateUsedCapacity(warehouse: Record<string, number>): number {
-    // 示例：简单地将所有物品数量相加（假设体积为1）
-    return Object.values(warehouse).reduce((sum, amount) => sum + (amount || 0), 0); // 返回当前已用容量
 }

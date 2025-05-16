@@ -93,7 +93,7 @@ function initializeParticipant(army: Army, terrain: TerrainType, isAttacker: boo
 }
 
 // 执行一轮战斗
-function executeCombatRound(attacker: CombatParticipant, defender: CombatParticipant, battleReport: BattleReport, phase: BattlePhase): void {
+function executeCombatRound(ctx: Context, region: Region, attacker: CombatParticipant, defender: CombatParticipant, battleReport: BattleReport, phase: BattlePhase) {
     const roundReport = {
         phase,
         attackerStats: { manpower: attacker.currentManpower, organization: attacker.currentOrganization },
@@ -159,7 +159,7 @@ function executeCombatRound(attacker: CombatParticipant, defender: CombatPartici
 }
 
 // 内部战斗结算函数
-function resolveSingleCombatEncounter(attackingArmy: Army, defendingArmy: Army, region: Region): BattleReport {
+async function resolveSingleCombatEncounter(ctx: Context, attackingArmy: Army, defendingArmy: Army, region: Region): Promise<BattleReport> {
     const battleReport: BattleReport = {
         attacker: { armyId: attackingArmy.armyId, name: attackingArmy.name, initialManpower: attackingArmy.manpower, initialOrganization: attackingArmy.organization || calculateArmyBaseStats(attackingArmy).organization },
         defender: { armyId: defendingArmy.armyId, name: defendingArmy.name, initialManpower: defendingArmy.manpower, initialOrganization: defendingArmy.organization || calculateArmyBaseStats(defendingArmy).organization },
@@ -185,15 +185,16 @@ function resolveSingleCombatEncounter(attackingArmy: Army, defendingArmy: Army, 
     battleReport.defender.initialOrganization = defender.currentOrganization;
 
     let roundCount = 0;
-    const maxRounds = 20; // 最大回合数，防止无限循环
+    // const maxRounds = 20; // 最大回合数，防止无限循环 - 移除最大回合数限制
 
-    while (roundCount < maxRounds && attacker.currentManpower > 0 && defender.currentManpower > 0 && attacker.currentOrganization > attacker.army.manpower * ROUT_THRESHOLD && defender.currentOrganization > defender.army.manpower * ROUT_THRESHOLD) {
+    // 战斗循环：直到一方兵力耗尽或组织度过低溃退
+    while (attacker.currentManpower > 0 && defender.currentManpower > 0 && attacker.currentOrganization > attacker.army.manpower * ROUT_THRESHOLD && defender.currentOrganization > defender.army.manpower * ROUT_THRESHOLD) {
         roundCount++;
         let phase: BattlePhase = BattlePhase.MAIN_COMBAT;
         if (roundCount <= 3) phase = BattlePhase.INITIAL_ENGAGEMENT;
         else if (roundCount > 10) phase = BattlePhase.PROTRACTED_COMBAT; // 示例：超过10回合进入持久战
 
-        executeCombatRound(attacker, defender, battleReport, phase);
+        executeCombatRound(ctx, region, attacker, defender, battleReport, phase); // Corrected: Passed ctx and region
 
         // 简单增援逻辑 (此处未实现具体增援单位加入战斗，仅为示例点)
         if (Math.random() < REINFORCE_CHANCE) {
@@ -223,15 +224,11 @@ function resolveSingleCombatEncounter(attackingArmy: Army, defendingArmy: Army, 
         battleReport.result.reason = defender.currentManpower <= 0 ? '防御方兵力耗尽' : '防御方组织度过低溃退';
         attackingArmy.status = ArmyStatus.OCCUPYING; // 攻击方胜利后可能进入占领状态
         defendingArmy.status = ArmyStatus.RETREATING; // 防御方溃退
-    } else if (roundCount >= maxRounds) {
-        battleReport.result.winner = null; // 僵持
-        battleReport.result.reason = '战斗达到最大回合数，陷入僵持';
-        attackingArmy.status = ArmyStatus.STALEMATE;
-        defendingArmy.status = ArmyStatus.STALEMATE;
     } else {
-        // 理论上不应该到这里，因为循环条件会保证一方溃退或兵力耗尽
+        // 理论上不应该到达这里，因为循环条件会保证一方溃退或兵力耗尽
+        // 如果循环因为其他原因（例如未来的新条件）结束，可以设定一个默认结果
         battleReport.result.winner = null;
-        battleReport.result.reason = '未知战斗结果';
+        battleReport.result.reason = '战斗结束，无明确胜负（非溃退或兵力耗尽）'; // 调整原因描述
         attackingArmy.status = ArmyStatus.IDLE; // 或其他合适状态
         defendingArmy.status = ArmyStatus.IDLE;
     }
@@ -273,7 +270,7 @@ export async function initiateCombat(ctx: Context, attackingArmy: Army, defendin
     console.log(`[战斗核心] 主要交战双方: 攻击方 ${attackingArmy.armyId} vs 防御方 ${mainDefender.armyId}`);
 
     // 3. 执行战斗结算
-    const battleReport = resolveSingleCombatEncounter(attackingArmy, mainDefender, region);
+    const battleReport = await resolveSingleCombatEncounter(ctx, attackingArmy, mainDefender, region); // Corrected: Passed ctx
     console.log(`[战斗结算] 军队 ${attackingArmy.armyId} 与 ${mainDefender.armyId} 的战斗已结算。胜者: ${battleReport.result.winner || '僵持'}, 原因: ${battleReport.result.reason}`);
 
     // 4. 根据战斗结果更新数据库
@@ -303,12 +300,42 @@ export async function initiateCombat(ctx: Context, attackingArmy: Army, defendin
     reportMessage += `攻击方剩余: 兵力 ${battleReport.result.finalAttackerManpower}, 组织度 ${battleReport.result.finalAttackerOrganization?.toFixed(0)}\n`;
     reportMessage += `防御方剩余: 兵力 ${battleReport.result.finalDefenderManpower}, 组织度 ${battleReport.result.finalDefenderOrganization?.toFixed(0)}\n`;
 
-    console.log(`[战报生成]\n${reportMessage}`);
+    // 5. 发送战报 (根据待办事项 12 格式化并发送)
+    const reportPart1 = `=====[战报]=====
+交战地区：${battleReport.regionId}
+地区地形：${battleReport.terrain}
+■进攻方：${battleReport.attacker.name}
+■编号：${battleReport.attacker.armyId}
+□兵力：${battleReport.attacker.initialManpower.toLocaleString()}
+□组织度：${battleReport.attacker.initialOrganization?.toFixed(0)}
+■防御方：${battleReport.defender.name}
+■编号：${battleReport.defender.armyId}
+□兵力：${battleReport.defender.initialManpower.toLocaleString()}
+□组织度：${battleReport.defender.initialOrganization?.toFixed(0)}
+■战斗结果：${battleReport.result.winner ? (battleReport.result.winner === attackingArmy.armyId ? '进攻方胜利' : '防御方胜利') : '僵持'}
+■原因：${battleReport.result.reason}`;
+
+    const reportPart2 = `=====[结果]=====
+■攻击方损失:
+□兵力：${(battleReport.attacker.initialManpower - battleReport.result.finalAttackerManpower).toLocaleString()}
+□组织度：${((battleReport.attacker.initialOrganization || 0) - (battleReport.result.finalAttackerOrganization || 0)).toFixed(1)}
+■防御方损失:
+□兵力：${(battleReport.defender.initialManpower - battleReport.result.finalDefenderManpower).toLocaleString()},
+□组织度：${((battleReport.defender.initialOrganization || 0) - (battleReport.result.finalDefenderOrganization || 0)).toFixed(1)}
+■攻击方剩余:
+□兵力：${battleReport.result.finalAttackerManpower.toLocaleString()}
+□组织度：${battleReport.result.finalAttackerOrganization?.toFixed(0)}
+■防御方剩余:
+□兵力：${battleReport.result.finalDefenderManpower.toLocaleString()}
+□组织度：${battleReport.result.finalDefenderOrganization?.toFixed(0)}`;
+
+    console.log(`[战报生成]\n${reportPart1}\n${reportPart2}`);
 
     // 广播战报到地区频道 (如果存在)
     if (region.guildId) {
         try {
-            await ctx.broadcast([`onebot:${region.guildId}`], reportMessage);
+            await ctx.broadcast([`onebot:${region.guildId}`], reportPart1);
+            await ctx.broadcast([`onebot:${region.guildId}`], reportPart2);
             console.log(`[战报广播] 战报已发送至频道 ${region.guildId}`);
         } catch (e) {
             console.warn(`[广播失败] 无法向地区 ${region.RegionId} (${region.guildId}) 发送战报:`, e);
@@ -331,17 +358,63 @@ export async function initiateCombat(ctx: Context, attackingArmy: Army, defendin
             await ctx.database.set('army', { armyId: attackingArmy.armyId }, { status: ArmyStatus.GARRISONED }); // 直接驻扎
             console.log(`[战斗胜利] 攻击方 ${attackingArmy.armyId} 胜利，已在 ${region.RegionId} 转为驻扎。地区归属未变。`);
         }
-    } else if (attackingArmy.status === ArmyStatus.RETREATING) {
-        // TODO: 处理攻击方溃退逻辑，例如返回原驻地或最近友方地区
+    }
+
+    // 处理攻击方溃退
+    if (attackingArmy.status === ArmyStatus.RETREATING) {
         console.log(`[溃退处理] 攻击方 ${attackingArmy.armyId} 溃退，需实现返回逻辑。暂时恢复为驻扎。`);
         // 简化处理：暂时让溃退军队在原地恢复驻扎，后续应实现撤退到安全区域
         await ctx.database.set('army', { armyId: attackingArmy.armyId }, { status: ArmyStatus.GARRISONED, targetRegionId: undefined, marchEndTime: undefined });
+
+        // 广播攻击方溃退消息和战报给指挥官和首都
+        const commanderDataAttacker = (await ctx.database.get('userdata', { userId: attackingArmy.commanderId }))?.[0];
+        if (commanderDataAttacker) {
+            // TODO: 实现向指挥官发送消息的逻辑 (私聊或指定频道)
+            // const retreatMsgAttacker = `[军队溃退] 您的军队 ${attackingArmy.name} (${attackingArmy.armyId}) 在 ${region.RegionId} 的战斗中溃退！`;
+            // console.log(retreatMsgAttacker);
+            // 发送 retreatMsgAttacker, reportPart1, reportPart2 给指挥官
+        }
+
+        if (commanderDataAttacker?.countryName) {
+            const countryDataAttacker = (await ctx.database.get('country', { name: commanderDataAttacker.countryName }))?.[0];
+            if (countryDataAttacker?.capitalRegionId) {
+                const capitalRegionAttacker = (await ctx.database.get('regiondata', { RegionId: countryDataAttacker.capitalRegionId }))?.[0];
+                if (capitalRegionAttacker?.guildId) {
+                    const retreatMsgAttackerCapital = `[军队溃退] ${commanderDataAttacker.countryName} 的军队 ${attackingArmy.name} (${attackingArmy.armyId}) 在 ${region.RegionId} 的战斗中溃退！`;
+                    ctx.broadcast([`onebot:${capitalRegionAttacker.guildId}`], retreatMsgAttackerCapital).catch(e => console.warn("攻击方溃退消息广播到首都失败", e));
+                    ctx.broadcast([`onebot:${capitalRegionAttacker.guildId}`], reportPart1).catch(e => console.warn("攻击方战报Part1广播到首都失败", e));
+                    ctx.broadcast([`onebot:${capitalRegionAttacker.guildId}`], reportPart2).catch(e => console.warn("攻击方战报Part2广播到首都失败", e));
+                }
+            }
+        }
     }
 
+    // 处理防御方溃退
     if (mainDefender.status === ArmyStatus.RETREATING) {
-        // TODO: 处理防御方溃退逻辑
         console.log(`[溃退处理] 防御方 ${mainDefender.armyId} 溃退，需实现返回逻辑。暂时恢复为驻扎。`);
         await ctx.database.set('army', { armyId: mainDefender.armyId }, { status: ArmyStatus.GARRISONED, targetRegionId: undefined, marchEndTime: undefined });
+
+        // 广播防御方溃退消息和战报给指挥官和首都
+        const commanderDataDefender = (await ctx.database.get('userdata', { userId: mainDefender.commanderId }))?.[0];
+        if (commanderDataDefender) {
+             // TODO: 实现向指挥官发送消息的逻辑 (私聊或指定频道)
+            // const retreatMsgDefender = `[军队溃退] 您的军队 ${mainDefender.name} (${mainDefender.armyId}) 在 ${region.RegionId} 的战斗中溃退！`;
+            // console.log(retreatMsgDefender);
+            // 发送 retreatMsgDefender, reportPart1, reportPart2 给指挥官
+        }
+
+        if (commanderDataDefender?.countryName) {
+            const countryDataDefender = (await ctx.database.get('country', { name: commanderDataDefender.countryName }))?.[0];
+            if (countryDataDefender?.capitalRegionId) {
+                const capitalRegionDefender = (await ctx.database.get('regiondata', { RegionId: countryDataDefender.capitalRegionId }))?.[0];
+                if (capitalRegionDefender?.guildId) {
+                    const retreatMsgDefenderCapital = `[军队溃退] ${commanderDataDefender.countryName} 的军队 ${mainDefender.name} (${mainDefender.armyId}) 在 ${region.RegionId} 的战斗中溃退！`;
+                     ctx.broadcast([`onebot:${capitalRegionDefender.guildId}`], retreatMsgDefenderCapital).catch(e => console.warn("防御方溃退消息广播到首都失败", e));
+                    ctx.broadcast([`onebot:${capitalRegionDefender.guildId}`], reportPart1).catch(e => console.warn("防御方战报Part1广播到首都失败", e));
+                    ctx.broadcast([`onebot:${capitalRegionDefender.guildId}`], reportPart2).catch(e => console.warn("防御方战报Part2广播到首都失败", e));
+                }
+            }
+        }
     } else if (battleReport.result.winner === mainDefender.armyId && mainDefender.status === ArmyStatus.DEFENDING) {
         // 防御方胜利，恢复驻扎
         await ctx.database.set('army', { armyId: mainDefender.armyId }, { status: ArmyStatus.GARRISONED });

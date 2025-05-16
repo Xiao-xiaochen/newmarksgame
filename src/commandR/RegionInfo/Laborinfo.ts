@@ -45,7 +45,8 @@ export function Laborinfo(ctx: Context) {
 =====[地区劳动力]=====
 ${username} 同志！
 ■ 总劳动力：${formatLabor(totalLabor)}万
-■ 繁忙劳动力：${formatLabor(workingLabor)}万
+■ 固定劳动力 (已分配)：${formatLabor(totalAllocatedLabor)}万
+■ 繁忙劳动力 (实际工作)：${formatLabor(workingLabor)}万
 ■ 空闲劳动力：${formatLabor(idleLabor)}万
 `.trim()
     })

@@ -93,15 +93,6 @@ export function SteelmakingCommand(ctx: Context) {
                 return `资源不足！\n${missingResources.join('\n')}`;
             }
 
-            // --- 检查仓库容量 ---
-            const capacity = calculateWarehouseCapacity(region);
-            const used = calculateUsedCapacity(currentWarehouse);
-            const availableCapacity = capacity - used;
-
-            if (availableCapacity < totalOutputVolume) {
-                return `仓库空间不足！\n需要空间: ${totalOutputVolume}\n可用空间: ${availableCapacity} (当前 ${used}/${capacity})`;
-            }
-
             // --- 执行炼钢：更新仓库 ---
             const updatedWarehouse = { ...currentWarehouse };
             // 扣除消耗
@@ -150,13 +141,4 @@ ${consumedText}
 ${producedText}
 `.trim();
         });
-}
-
-// 占位函数 - 你需要根据你的逻辑实现它们 (同 RefineOil.ts)
-function calculateWarehouseCapacity(region: Region): number {
-    return region.warehouseCapacity || 100000; // 返回仓库总容量
-}
-
-function calculateUsedCapacity(warehouse: Record<string, number>): number {
-    return Object.values(warehouse).reduce((sum, amount) => sum + (amount || 0), 0); // 返回当前已用容量
 }

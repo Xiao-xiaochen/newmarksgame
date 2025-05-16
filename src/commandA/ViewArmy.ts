@@ -36,8 +36,8 @@ export function ViewArmy(ctx: Context) {
         const armyId = army.armyId;
         const regionId = army.regionId; // 驻扎地区 ID
         const manpower = army.manpower || 0;
-        // 假设战斗人员数量等于步兵装备数量
-        const combatPersonnel = army.equipment?.InfantryEquipment || 0;
+        // 战斗人员数量应为兵力总数和步兵装备数量中的较小值
+        const combatPersonnel = Math.min(manpower, army.equipment?.InfantryEquipment || 0);
 
         // 根据军队状态生成任务描述
         let taskDescription = '状态：未知';
@@ -63,7 +63,10 @@ export function ViewArmy(ctx: Context) {
           taskDescription = '状态：战斗中';
         } else if (army.status === ArmyStatus.GARRISONED) {
           taskDescription = '状态：驻扎中';
-        } else {
+        } else if (army.status === ArmyStatus.OCCUPYING) {
+          taskDescription = '状态：占领中';
+        }
+         else {
           // 处理未知的状态，或者可以记录一个警告
           taskDescription = `状态：未知 (${army.status || '空'})`;
           console.warn(`未知的军队状态: ${army.status} for army ${army.armyId}`);
