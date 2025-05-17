@@ -144,7 +144,7 @@ export function produce(
   const maxBatchesByLabor = Math.floor(region.labor / laborPerBatch);
 
   // 实际生产批次，受限于工厂、劳动力，且每次最多1批
-  const actualBatches = Math.min(maxBatchesByFactory, maxBatchesByLabor, 1);
+  const actualBatches = Math.min(maxBatchesByFactory, maxBatchesByLabor);
 
   if (actualBatches <= 0) {
     // 细化错误信息

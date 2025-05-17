@@ -92,7 +92,7 @@ function generateHelpMessage(): string {
   commandCategories.forEach(category => {
     message += `--- ${category.name} ---\n`;
     category.commands.forEach(cmd => {
-      message += `  - \`${cmd.name}${cmd.alias ? ` (${cmd.alias})` : ''}\`: ${cmd.desc}\n`;
+      message += `  - \`${cmd.name} : ''}\`: ${cmd.desc}\n`;
     });
     message += '\n'; // 分类之间的空行
   });
@@ -151,7 +151,7 @@ export function HelpCommand(ctx: Context) { // 函数名修正为 HelpCommand
       commandCategories.forEach(category => {
         let categoryMessage = `--- ${category.name} ---\n`;
         category.commands.forEach(cmd => {
-          categoryMessage += `  - \`${cmd.name}${cmd.alias ? ` (${cmd.alias})` : ''}\`: ${cmd.desc}\n`;
+          categoryMessage += `  - \`${cmd.name} : ''}\`: ${cmd.desc}\n`;
         });
         helpMessages.push(categoryMessage.trim());
       });
