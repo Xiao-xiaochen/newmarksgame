@@ -1,5 +1,5 @@
 import { Context } from 'koishi';
-import { Army, ArmyStatus, Region } from '../types';
+import { Army, ArmyStatus, Region } from '../../types';
 import { initiateCombat } from './war'; // 导入战斗逻辑函数
 
 /**

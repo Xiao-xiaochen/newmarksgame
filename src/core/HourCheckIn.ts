@@ -318,6 +318,16 @@ export async function performHourlyUpdateLogic(ctx: Context) {
         // 确保 warehouse 对象被更新
         updatedRegionData.warehouse = { ...currentWarehouse };
 
+        // --- 新增：重置繁忙军工厂 ---
+        const currentMFactory = region.mfactory || 0;
+        const currentBusyMFactory = region.busymfactory || 0;
+        if (currentBusyMFactory > 0) {
+            updatedRegionData.mfactory = currentMFactory + currentBusyMFactory;
+            updatedRegionData.busymfactory = 0;
+            reportMessages.push(`■军工厂已重置：${currentBusyMFactory}座繁忙工厂已转为空闲。`);
+        }
+        // --- 重置繁忙军工厂结束 ---
+
 
         // --- 7. 生成报告 ---
         reportMessages.push(`=====[地区报告推送]=====`);

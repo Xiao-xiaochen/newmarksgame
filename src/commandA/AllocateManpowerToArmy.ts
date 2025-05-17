@@ -3,7 +3,7 @@ import { Region, userdata, Army } from '../types'; // 导入所需类型
 import { findArmyByTarget } from '../utils/ArmyUtils'; // 假设有一个工具函数来查找军队
 
 export function AllocateManpowerToArmy(ctx: Context) {
-  ctx.command('分配人力 <target:string> <amount:number>', '为指定军队分配人力（从地区空闲劳动力中抽取）')
+  ctx.command('分配人力 <target:string> <amount:number>', '为指定军队分配人力（从地区人口和劳动力中抽取）')
     .alias('分配兵力', '征兵')
     .usage('分配人力 <军队名称或编号> <数量>')
     .example('分配人力 11451 10000')
@@ -54,21 +54,41 @@ export function AllocateManpowerToArmy(ctx: Context) {
           return `您不是军队 ${army.name} (${army.armyId}) 的指挥官，也不是地区 ${regionId} 的领导，无权分配人力。`;
         }
 
-        // 5. 检查地区空闲劳动力
-        const idleLabor = region.Busylabor || 0;
-        if (idleLabor < amount) {
-          return `地区 ${regionId} 的空闲劳动力不足 (${idleLabor})，无法分配 ${amount} 人力。`;
+        // 5. 检查地区空闲劳动力、总劳动力和总人口
+        const currentPopulation = region.population || 0;
+        const currentTotalLabor = region.labor || 0;
+        const currentIdleLabor = region.Busylabor || 0;
+
+        if (currentIdleLabor < amount) {
+          return `地区 ${regionId} 的空闲劳动力不足 (${currentIdleLabor})，无法分配 ${amount} 人力。`;
+        }
+        if (currentTotalLabor < amount) {
+          // 理论上 currentIdleLabor <= currentTotalLabor，此检查可能冗余，但为保险起见保留
+          return `地区 ${regionId} 的总劳动力不足 (${currentTotalLabor})，无法分配 ${amount} 人力。`;
+        }
+        if (currentPopulation < amount) {
+          return `地区 ${regionId} 的总人口不足 (${currentPopulation})，无法分配 ${amount} 人力。`;
         }
 
         // 6. 执行分配
-        const updatedRegionIdleLabor = idleLabor - amount;
+        const updatedRegionPopulation = currentPopulation - amount;
+        const updatedRegionTotalLabor = currentTotalLabor - amount;
+        const updatedRegionIdleLabor = currentIdleLabor - amount;
         const updatedArmyManpower = (army.manpower || 0) + amount;
 
         // 更新数据库
-        await ctx.database.set('regiondata', { RegionId: regionId }, { Busylabor: updatedRegionIdleLabor });
+        await ctx.database.set('regiondata', { RegionId: regionId }, {
+          population: updatedRegionPopulation,
+          labor: updatedRegionTotalLabor,
+          Busylabor: updatedRegionIdleLabor
+        });
         await ctx.database.set('army', { armyId: army.armyId }, { manpower: updatedArmyManpower });
 
-        return `成功为军队 ${army.name} (${army.armyId}) 分配了 ${amount} 人力。\n地区剩余空闲劳动力：${updatedRegionIdleLabor}\n军队当前总兵力：${updatedArmyManpower}`;
+        return `成功为军队 ${army.name} (${army.armyId}) 分配了 ${amount} 人力。
+地区剩余人口：${updatedRegionPopulation}
+地区剩余总劳动力：${updatedRegionTotalLabor}
+地区剩余空闲劳动力：${updatedRegionIdleLabor}
+军队当前总兵力：${updatedArmyManpower}`;
 
       } catch (error) {
         console.error(`处理分配人力命令时出错 (用户: ${userId}, 军队目标: ${target}, 数量: ${amount}):`, error);

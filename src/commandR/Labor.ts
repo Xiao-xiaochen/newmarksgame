@@ -1,6 +1,6 @@
 import { Context, Session } from 'koishi';
-import { Region, userdata } from '../types'; // 导入类型
-import { BUILDINGS, BuildingDefinition, getBuildingDefinitionByName } from '../core/Buildings'; // 导入建筑定义
+import { Region, userdata, BuildingDefinition } from '../types'; // 导入类型
+import { BUILDINGS, getBuildingDefinitionByName } from '../core/Buildings'; // 导入建筑定义
 
 // 允许分配劳动力的建筑类型名称列表
 // --- 修改：移除 '炼钢厂', '混凝土厂', '机械厂', '炼油厂' --- 

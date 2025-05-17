@@ -41,7 +41,7 @@ export const MILITARY_ITEMS: Record<string, MilitaryItemConfig> = {
     name: '反坦克炮',
     output: 8,
     laborCost: 20000,
-    resourceCosts: { steel: 64, rareMetal: 4 }, // 示例中是稀有资源，这里统一用稀有金属
+    resourceCosts: { steel: 64, rareMetal: 4 },
     factoriesRequired: 1,
   },
   '防空火炮': {

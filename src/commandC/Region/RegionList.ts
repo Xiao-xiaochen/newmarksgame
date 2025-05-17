@@ -1,5 +1,5 @@
 import { Context } from 'koishi';
-import { userdata, Region, Country } from '../types'; // 确保导入 Country 类型
+import { userdata, Region, Country } from '../../types'; // 确保导入 Country 类型
 
 export function RegionList(ctx: Context) {
   ctx.command('国家地区列表', '查看本国控制的所有地区 (仅限成员)', { authority: 1 }) // 基础权限1，代码内检查成员身份

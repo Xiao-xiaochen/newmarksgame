@@ -1,42 +1,5 @@
-import { Region } from '../types'; // 确认 types.ts 的相对路径
+import { Region, BuildingDefinition } from '../types'; // 确认 types.ts 的相对路径
 import { TRandom } from '../utils/Random';
-
-// 定义建筑属性结构
-export interface BuildingDefinition {
-  name: string; // 显示名称
-  key: keyof Region; // 对应 Region 数据中的字段名 (用于计数)
-  description: string;
-  buildCost: { // 建造消耗
-    steel?: number;
-    concrete?: number; // 混凝土
-    machinery?: number; // 机械
-    constructionPoints: number; // 所需总建造点数
-    Asphalt?: number; // 新增：消耗 15 沥青
-  };
-  operation?: { // 运行消耗/产出 (每小时)
-    fixLabor?: number; // 需要的固定劳动力 (Fixlabor)
-    // 资源消耗 (负数)
-    coal?: number;
-    ironOre?: number;
-    crudeOil?: number; // 原油 (对应 Region.warehouse.oil)
-    stone?: number; // 混凝土厂消耗石料
-    steel?: number; // 机械厂消耗钢铁
-    // ... 其他资源消耗 ...
-    produces?: { // 主要产出 (正数)
-      goods?: number;
-      steel?: number;
-      food?: number;
-      fuel?: number;   // 燃料 (对应 Region.warehouse.fuel)
-      Mazout?: number; // 重油 (对应 Region.warehouse.Mazout)
-      constructionCapacity?: number; // 建筑部门产出
-      stone?: number; // 矿场产出石料
-      concrete?: number; // 混凝土厂产出
-      machinery?: number; // 新增：机械厂产出
-      // ... 其他产出 ...
-    };
-  };
-  infrastructureCost: number; // 每个建筑消耗的基础设施点数 (消耗 base)
-}
 
 // 建筑配置对象
 export const BUILDINGS: Record<string, BuildingDefinition> = {

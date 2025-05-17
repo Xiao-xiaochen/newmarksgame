@@ -3,14 +3,6 @@ import { Context, Session } from 'koishi';
 import { BUILDINGS, getBuildingDefinitionByName } from '../core/Buildings'; // 导入通用建筑定义
 import { Region, userdata } from '../types'; // 导入类型
 
-// 定义建造队列项结构
-interface ConstructionQueueItem {
-  type: string; // 建筑显示名称
-  key: keyof Region; // 对应 Region 的字段 key
-  remainingPoints: number; // 剩余所需建造点数
-  quantity: number; // 本次建造的数量
-}
-
 export function GeneralBuild(ctx: Context) {
   ctx.command('地区建造 <type:string> [quantity:number]') // 将 quantity 设为可选，默认为 1
     .alias('建') // 添加别名

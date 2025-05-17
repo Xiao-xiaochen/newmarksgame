@@ -1,27 +1,13 @@
-import { Army, Region, TerrainType, BattleReport, BattlePhase, ArmyStatus, userdata } from '../types';
 import { Context } from 'koishi'; // 添加 Context 导入
-import { INFANTRY_EQUIPMENT_STATS, INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS } from './equipmentStats';
+
+import { Army, Region, TerrainType, BattleReport, BattlePhase, ArmyStatus, userdata, CombatParticipant } from '../../types';
+import { INFANTRY_EQUIPMENT_STATS, INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS } from '../equipmentStats';
 
 const MAX_COMBAT_WIDTH = 80; // 默认战场宽度
 const REINFORCE_CHANCE = 0.5; // 增援几率
 const BASE_ORGANIZATION_DAMAGE = 5; // 基础组织度伤害
 const BASE_MANPOWER_LOSS_FACTOR = 0.01; // 基础人力损失系数
 const ROUT_THRESHOLD = 0.2; // 溃退组织度阈值 (20%)
-
-interface CombatParticipant {
-    army: Army;
-    currentManpower: number;
-    currentOrganization: number;
-    totalAttack: number;
-    totalDefense: number;
-    totalBreakthrough: number;
-    terrainModifiers: {
-        attack: number;
-        defense: number;
-        breakthrough: number;
-    };
-    isAttacker: boolean;
-}
 
 // 计算军队的装备基础属性总和 (仅考虑步兵装备作为示例)
 function calculateArmyBaseStats(army: Army): { attack: number; defense: number; breakthrough: number; organization: number } {

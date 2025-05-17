@@ -189,10 +189,14 @@ export interface Region {
   steelmill: number;    // 钢铁厂 (总数)
   busysteelmill: number;// 正在工作的钢铁厂 (同上)
   lightIndustry?: number; // 新增: 轻工厂
+  busylightIndustry?: number; // 正在工作的轻工厂
   refinery?: number;      // 新增: 炼油厂
+  busyrefinery?: number;  // 正在工作的炼油厂
   powerPlant?: number;    // 新增: 发电厂 (占位，暂无功能)
   concretePlant?: number;// 新增: 混凝土厂
+  busyconcretePlant?: number; // 正在工作的混凝土厂
   machineryPlant?: number; // 新增: 机械厂
+  busymachineryPlant?: number; // 正在工作的机械厂
   miningAllocation?: Record<string, number>; // 矿场分配记录
   laborAllocation?: Record<string, number>; // 新增: 劳动力分配记录 { buildingKey: count }
 
@@ -255,6 +259,58 @@ export interface Region {
   // garrisonedArmyIds?: string[]; // 考虑是否需要直接存储驻军ID列表，或者通过查询 army 表实现
 }
 
+export interface CombatParticipant {
+  army: Army;
+  currentManpower: number;
+  currentOrganization: number;
+  totalAttack: number;
+  totalDefense: number;
+  totalBreakthrough: number;
+  terrainModifiers: {
+      attack: number;
+      defense: number;
+      breakthrough: number;
+  };
+  isAttacker: boolean;
+}
+
+// 定义建筑属性结构
+export interface BuildingDefinition {
+  name: string; // 显示名称
+  key: keyof Region; // 对应 Region 数据中的字段名 (用于计数)
+  description: string;
+  buildCost: { // 建造消耗
+    steel?: number;
+    concrete?: number; // 混凝土
+    machinery?: number; // 机械
+    constructionPoints: number; // 所需总建造点数
+    Asphalt?: number; // 新增：消耗 15 沥青
+  };
+  operation?: { // 运行消耗/产出 (每小时)
+    fixLabor?: number; // 需要的固定劳动力 (Fixlabor)
+    // 资源消耗 (负数)
+    coal?: number;
+    ironOre?: number;
+    crudeOil?: number; // 原油 (对应 Region.warehouse.oil)
+    stone?: number; // 混凝土厂消耗石料
+    steel?: number; // 机械厂消耗钢铁
+    // ... 其他资源消耗 ...
+    produces?: { // 主要产出 (正数)
+      goods?: number;
+      steel?: number;
+      food?: number;
+      fuel?: number;   // 燃料 (对应 Region.warehouse.fuel)
+      Mazout?: number; // 重油 (对应 Region.warehouse.Mazout)
+      constructionCapacity?: number; // 建筑部门产出
+      stone?: number; // 矿场产出石料
+      concrete?: number; // 混凝土厂产出
+      machinery?: number; // 新增：机械厂产出
+      // ... 其他产出 ...
+    };
+  };
+  infrastructureCost: number; // 每个建筑消耗的基础设施点数 (消耗 base)
+}
+
 // --- 军队数据 ---
 export interface Army {
   armyId: string; // 唯一ID (例如: RegionId + 序号, 11451)
@@ -285,6 +341,7 @@ export enum ArmyStatus {
   STALEMATE = '僵持中',
   // 可以添加更多状态, 如 REORGANIZING (整顿中), SIEGING (围攻中)
 }
+
 
 
 // --- 战斗相关类型 ---

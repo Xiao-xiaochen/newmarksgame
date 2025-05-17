@@ -34,9 +34,7 @@ function getAdjacentRegions(regionId: string): string[] {
     return adjacent;
 }
 
-
-// --- 新增：加入国家冷却时间 (例如 3 天) ---
-const JOIN_COOLDOWN = 3 * Time.day; // 单位：毫秒
+const JOIN_COOLDOWN = 3 * Time.day;
 
 export function Invite(ctx: Context) {
     ctx.command('邀请加入国家 <targetUser:user>', '邀请玩家加入你的国家', { authority: 1 })

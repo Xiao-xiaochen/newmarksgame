@@ -13,12 +13,13 @@ export interface Config{
     InvateCountryTimeout:number;//邀请国家超时时间(秒)
 //玩家设置
     StationTimeout:number;//驻扎确认超时时间(秒)
-    StationColldown:number;//驻扎冷却(小时)
+    StationCooldown:number;//驻扎冷却(小时)
 //地区设置
 
 //世界地图设置
     mapSeed:string;
 };
+
 export const Config:Schema<Config>=Schema.intersect([
   Schema.object({
     MaxArmiesPerRegion:Schema.number().description('每个地区最大军队').default(9),
@@ -37,11 +38,12 @@ export const Config:Schema<Config>=Schema.intersect([
     StationTimeout:Schema.number().description('驻扎确认超时时间\(秒\)').default(30),
     StationCooldown:Schema.number().description('驻扎冷却\(小时\)').default(36),
   }).description('玩家设置'),
-  Schema.object({
-    
-  }).description('地区设置'),
+  //Schema.object({
+  // }).description('地区设置'),
   Schema.object({
     mapSeed:Schema.string().description('世界地图种子').default('EarthLike2023')
     }).description('世界地图设置')
 
 ])
+
+

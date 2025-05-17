@@ -1,6 +1,6 @@
 import { Context } from 'koishi';
-import { Country } from '../types'; // 导入需要的类型
-import { validateCountryName } from '../utils/Namecheck'; // 导入国家名称验证函数
+import { Country } from '../../types'; // 导入需要的类型
+import { validateCountryName } from '../../utils/Namecheck'; // 导入国家名称验证函数
 
 export function ForceChangenName(ctx: Context) {
   // --- 定义管理员命令，权限设置为 4 ---

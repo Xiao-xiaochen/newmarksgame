@@ -2,7 +2,7 @@ import { Context, Session, Time } from 'koishi';
 import { Region, userdata, Army, ArmyStatus, TerrainType, } from '../types';
 import { findArmyByTarget } from '../utils/ArmyUtils';
 import { INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS } from '../core/equipmentStats';
-import { handleArmyArrival } from '../core/ArmyActions'; // 导入到达处理函数
+import { handleArmyArrival } from '../core/Military/ArmyActions'; // 导入到达处理函数
 
 //cofig
 //BaseMarchTimeMinutes:number   //基础行军时间(分钟)

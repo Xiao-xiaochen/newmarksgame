@@ -5,12 +5,10 @@ import { Context } from "koishi";
 // --- 核心服务与配置 ---
 import { Database } from "./models";
 import { setupDailyReset } from "./core/DayCheckIn"; // 注意：原为 CheckIn.ts，这里假设是 DayCheckIn.ts
-import { UserReset } from './core/UserReset';
-import { CountryReset } from './core/CountryReset'; // <--- 导入新命令
+import { UserReset } from './core/Administrator/UserReset';
+import { CountryReset } from './core/Administrator/CountryReset'; // <--- 导入新命令
 import { ManualCheckIn } from './commandP/ManualCheckIn'; // <--- 导入手动重置指令
-import { HelpCommand } from './utils/help'; // <--- 导入帮助指令
-import { handleArmyArrival } from './core/ArmyActions'; // <--- 导入军队到达处理函数
-import { Config } from "./Config"; // <--- 导入配置文件
+import { HelpCommand } from './help'; // <--- 导入帮助指令
 // --- 地图相关 ---
 import { InitializeRegions } from './core/Map/Command/InitializeRegions';
 import { WorldMapImport } from './core/Map/Command/WorldMapImport';
@@ -46,10 +44,10 @@ import { LaborCommand } from './commandR/Labor'; // <--- 导入劳动力指令
 import { RefineOilCommand } from './commandR/RefineOil'; // <--- 导入精炼油指令
 import { SteelmakingCommand } from './commandR/Steelmaking'; // <--- 导入钢铁制造指令
 import { HourCheckIn } from './core/HourCheckIn'; // <--- 导入地区小时签到指令
-import { SIInfo } from './commandR/RegionInfo/SIInfo'; // <--- 导入SI信息指令
+import { SIInfo } from './commandR/BuildingInfo/SIInfo'; // <--- 导入SI信息指令
 import { RMineCheckIn } from './commandR/CheckIn/MineCheckIn'; // <--- 导入地区资源签到指令
 import { TraditionalSteelmakingCommand } from './commandR/TraditionalSteelmaking'; // <--- 导入传统钢铁制造指令
-import { BuildPowerInfo } from './commandR/RegionInfo/BuildPowerInfo'; // <--- 导入地区建造力指令
+import { BuildPowerInfo } from './commandR/BuildingInfo/BuildPowerInfo'; // <--- 导入地区建造力指令
 import { DislaborCommand } from './commandR/Dislabor'; // <--- 导入取消分配劳动力指令
 import { FormArmy } from './commandA/FormArmy'; // <--- 导入组建军队指令
 import { AllocateManpowerToArmy } from './commandA/AllocateManpowerToArmy'; // <--- 分配劳动力到军队指令
@@ -66,12 +64,12 @@ import { Buildcountry } from "./commandC/Buildcountry";
 import { Mycountry } from "./commandP/Mycountry";
 import { Invite } from './commandC/Invite';
 import { MemberList } from './commandC/MemberList';
-import { RegionList } from './commandC/RegionList';
+import { RegionList } from './commandC/Region/RegionList';
 import { Hiscountry } from './commandP/Hiscountry'; // <--- 导入他的国家指令
 import { ExitCountry } from './commandC/ExitCountry'; // <--- 退出国家指令、
 import { Dismisscountry } from './commandC/Dismisscountry'; // <--- 解散国家指令
 import { ChangenName} from './commandC/ChangenName'; // <--- 国家改名指令
-import { ForceChangenName } from "./commandC/ForceChangenName";
+import { ForceChangenName } from "./core/Administrator/ForceChangenName";
  import { ManufactureCommand } from './commandR/Manufacture';
 
 export const inject = {

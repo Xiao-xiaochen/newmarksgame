@@ -70,7 +70,7 @@ export function Dismisscountry(ctx: Context) {
 
           // --- 发送解散后的音乐 ---
           try {
-            const audioAbsolutePath = 'e:/Dev/koishi-app/external/newmarksgame/src/Music/战斗仍将继续.ogg';
+            const audioAbsolutePath = 'e:/Dev/koishi-app/external/newmarksgame/Music/战斗仍将继续.ogg';
             if (session.platform === 'onebot') {
                 await session.send(segment.audio(`file:///${audioAbsolutePath}`));
                 console.log(`已向会话 ${session.sid} 发送解散国家后的音频。`);
