@@ -1,5 +1,6 @@
 import { Context, Query } from 'koishi'; // 导入 Query
 import { Region } from '../../types';
+import { format } from '../../utils/Format';
 
 export function ResourceInfo(ctx: Context) {
   // 修改命令定义，接受可选参数 identifier
@@ -17,9 +18,7 @@ export function ResourceInfo(ctx: Context) {
       if (!userId) {
         return '无法获取用户信息。';
       }
-
       const username = session.author?.name || '未知用户';
-      const format = (num: number | undefined) => num ? num.toLocaleString() : '未知'; // 处理 undefined 的情况
 
       let dbQuery: Query<Region>; // 使用 Query<Region> 类型
 

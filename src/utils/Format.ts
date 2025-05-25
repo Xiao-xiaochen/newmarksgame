@@ -1,0 +1,1 @@
+export const format = (num: number | undefined) => num ? num.toLocaleString() : '0'; // 处理 undefined 的情况

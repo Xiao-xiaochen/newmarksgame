@@ -74,7 +74,7 @@ export function FormArmy(ctx: Context) {
             const existingIndices = new Set<number>();
             for (const army of currentArmiesInRegion) {
                 if (army.armyId.startsWith(regionId)) {
-                    // 从 regionId 之后的部分提取序号
+                    // 提取地区ID后的数字序号
                     const indexStr = army.armyId.substring(regionId.length);
                     const index = parseInt(indexStr);
                     if (!isNaN(index) && index > 0) { // 确保是有效的正整数序号
@@ -82,47 +82,40 @@ export function FormArmy(ctx: Context) {
                     }
                 }
             }
-            
+
             while (existingIndices.has(nextArmyIndex)) {
                 nextArmyIndex++;
             }
 
             // 安全检查，防止 nextArmyIndex 超出合理范围
-            // 理论上，如果 currentArmiesInRegion.length < ctx.config.MaxArmiesPerRegion，总能找到一个 <= ctx.config.MaxArmiesPerRegion 的可用 nextArmyIndex
-            if (nextArmyIndex > ctx.config.MaxArmiesPerRegion) {
-                 // 这种情况通常不应该发生，除非 ctx.config.MaxArmiesPerRegion 设置得非常小，
-                 // 或者 existingIndices 的计算逻辑有误，或者数据库中存在不符合 "regionId + 数字序号" 格式的脏数据
-                console.warn(`Calculated nextArmyIndex ${nextArmyIndex} for region ${regionId} which is > ctx.config.MaxArmiesPerRegion ${ctx.config.MaxArmiesPerRegion}. Army count: ${currentArmiesInRegion.length}. Indices: ${Array.from(existingIndices).join(',')}`);
-                // 尝试寻找一个在[1, ctx.config.MaxArmiesPerRegion]范围内未被占用的序号作为回退
-                let fallbackIndexFound = false;
-                for (let i = 1; i <= ctx.config.MaxArmiesPerRegion; i++) {
-                    if (!existingIndices.has(i)) {
-                        nextArmyIndex = i;
-                        fallbackIndexFound = true;
-                        break;
-                    }
-                }
-                if (!fallbackIndexFound) {
-                    // 如果连回退都找不到（例如所有1-9的序号都被非标准ID占用了），则确实无法创建
-                    return `无法为地区 ${regionId} 的新军队找到合适的编号 (${ctx.config.MaxArmiesPerRegion}个已满或冲突)，请检查数据或联系管理员。`;
-                }
+            if (nextArmyIndex > ctx.config.MaxArmiesPerRegion && currentArmiesInRegion.length >= ctx.config.MaxArmiesPerRegion) {
+                // 如果计算出的下一个序号大于最大允许军队数，并且当前军队数已经达到上限，则确实无法创建
+                // (这里额外加一个判断，因为如果军队未满，理论上总能找到一个可用的小于等于MaxArmiesPerRegion的序号)
+                console.warn(`[FormArmy] Region ${regionId} is full or next index ${nextArmyIndex} exceeds max ${ctx.config.MaxArmiesPerRegion}. Army count: ${currentArmiesInRegion.length}.`);
+                return `地区 ${regionId} 的军队数量已达上限 (${ctx.config.MaxArmiesPerRegion}支) 或无法找到可用编号。`;
+            } else if (nextArmyIndex > 9999 && ctx.config.MaxArmiesPerRegion > 9999) {
+                // 增加一个序号上限，防止无限增长, 假设军队序号不超过4位数
+                // 如果MaxArmiesPerRegion本身就很大，这个限制可能需要调整
+                console.warn(`[FormArmy] Calculated nextArmyIndex ${nextArmyIndex} for region ${regionId} is too large.`);
+                return `无法为地区 ${regionId} 的新军队找到合适的编号（序号过大）。`;
             }
 
             newArmyId = `${regionId}${nextArmyIndex}`;
             newArmyName = `${regionId}第${nextArmyIndex}军`;
 
             const newArmy: Army = {
-                armyId: newArmyId,
-                name: newArmyName,
-                commanderId: userId,
-                regionId: regionId,
-                manpower: ctx.config.InitialArmyManPower,
-                equipment: {},
-                foodSupply: ctx.config.InitialArmyFood,
-                status: ArmyStatus.GARRISONED,
-                targetRegionId: undefined,
-                marchEndTime: undefined,
-                organization: 0, // 根据模型定义，添加 organization 字段并设初始值
+              armyId: newArmyId,
+              name: newArmyName,
+              commanderId: userId,
+              regionId: regionId,
+              manpower: ctx.config.InitialArmyManPower,
+              equipment: {},
+              foodSupply: ctx.config.InitialArmyFood,
+              status: ArmyStatus.GARRISONED,
+              targetRegionId: undefined,
+              marchEndTime: undefined,
+              organization: ctx.config.InitialArmyManPower * 0.5,
+              //ownerGuildId: ''
             };
 
             try {

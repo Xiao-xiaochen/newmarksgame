@@ -1,6 +1,7 @@
 import { Context, Session } from 'koishi';
 import { Army, ArmyStatus } from '../types'; // 导入 Army 类型 和 ArmyStatus 枚举
 import { findArmyByTarget } from '../utils/ArmyUtils'; // 导入查找军队的工具函数
+import { format } from '../utils/Format';
 
 export function ViewArmy(ctx: Context) {
   ctx.command('查看军队 <target:string>', '查看指定军队的详细信息（仅限指挥官）')
@@ -76,8 +77,8 @@ export function ViewArmy(ctx: Context) {
           '=====[军队信息]=====',
           `军队编号：${armyId}`,
           `驻扎地区：${regionId}`,
-          `军队人数：${manpower}人`,
-          `战斗人员：${combatPersonnel} 人`,
+          `军队人数：${format(manpower)}人`,
+          `战斗人员：${format(combatPersonnel)} 人`,
           taskDescription
         ].join('\n');
 

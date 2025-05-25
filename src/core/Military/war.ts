@@ -1,13 +1,7 @@
 import { Context } from 'koishi'; // 添加 Context 导入
 
-import { Army, Region, TerrainType, BattleReport, BattlePhase, ArmyStatus, userdata, CombatParticipant } from '../../types';
+import { Army, Region, TerrainType, BattleReport, BattlePhase, ArmyStatus, CombatParticipant } from '../../types';
 import { INFANTRY_EQUIPMENT_STATS, INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS } from '../equipmentStats';
-
-const MAX_COMBAT_WIDTH = 80; // 默认战场宽度
-const REINFORCE_CHANCE = 0.5; // 增援几率
-const BASE_ORGANIZATION_DAMAGE = 5; // 基础组织度伤害
-const BASE_MANPOWER_LOSS_FACTOR = 0.01; // 基础人力损失系数
-const ROUT_THRESHOLD = 0.2; // 溃退组织度阈值 (20%)
 
 // 计算军队的装备基础属性总和 (仅考虑步兵装备作为示例)
 function calculateArmyBaseStats(army: Army): { attack: number; defense: number; breakthrough: number; organization: number } {
@@ -80,6 +74,11 @@ function initializeParticipant(army: Army, terrain: TerrainType, isAttacker: boo
 
 // 执行一轮战斗
 function executeCombatRound(ctx: Context, region: Region, attacker: CombatParticipant, defender: CombatParticipant, battleReport: BattleReport, phase: BattlePhase) {
+    const MAX_COMBAT_WIDTH = ctx.config.MAX_COMBAT_WIDTH;
+    const REINFORCE_CHANCE = ctx.config.REINFORCE_CHANCE;
+    const BASE_ORGANIZATION_DAMAGE = ctx.config.BASE_ORGANIZATION_DAMAGE;
+    const BASE_MANPOWER_LOSS_FACTOR = ctx.config.BASE_MANPOWER_LOSS_FACTOR;
+    const ROUT_THRESHOLD = ctx.config.ROUT_THRESHOLD;
     const roundReport = {
         phase,
         attackerStats: { manpower: attacker.currentManpower, organization: attacker.currentOrganization },
@@ -174,7 +173,7 @@ async function resolveSingleCombatEncounter(ctx: Context, attackingArmy: Army, d
     // const maxRounds = 20; // 最大回合数，防止无限循环 - 移除最大回合数限制
 
     // 战斗循环：直到一方兵力耗尽或组织度过低溃退
-    while (attacker.currentManpower > 0 && defender.currentManpower > 0 && attacker.currentOrganization > attacker.army.manpower * ROUT_THRESHOLD && defender.currentOrganization > defender.army.manpower * ROUT_THRESHOLD) {
+    while (attacker.currentManpower > 0 && defender.currentManpower > 0 && attacker.currentOrganization > attacker.army.manpower * ctx.config.ROUT_THRESHOLD && defender.currentOrganization > defender.army.manpower * ctx.config.ROUT_THRESHOLD) {
         roundCount++;
         let phase: BattlePhase = BattlePhase.MAIN_COMBAT;
         if (roundCount <= 3) phase = BattlePhase.INITIAL_ENGAGEMENT;
@@ -182,10 +181,10 @@ async function resolveSingleCombatEncounter(ctx: Context, attackingArmy: Army, d
 
         executeCombatRound(ctx, region, attacker, defender, battleReport, phase); // Corrected: Passed ctx and region
 
-        // 简单增援逻辑 (此处未实现具体增援单位加入战斗，仅为示例点)
-        if (Math.random() < REINFORCE_CHANCE) {
+     // 简单增援逻辑 (此处未实现具体增援单位加入战斗，仅为示例点)
+     // if (Math.random() < REINFORCE_CHANCE) {
             // battleReport.rounds[battleReport.rounds.length - 1].log.push('一方或双方获得了增援！(未实现)');
-        }
+     // }
     }
 
     // 战斗结束判定
@@ -200,12 +199,12 @@ async function resolveSingleCombatEncounter(ctx: Context, attackingArmy: Army, d
     const attackerInitialManpower = battleReport.attacker.initialManpower; // 使用战报中的初始兵力
     const defenderInitialManpower = battleReport.defender.initialManpower;
 
-    if (attacker.currentOrganization <= attackerInitialManpower * ROUT_THRESHOLD || attacker.currentManpower <= 0) {
+    if (attacker.currentOrganization <= attackerInitialManpower * ctx.config.ROUT_THRESHOLD || attacker.currentManpower <= 0) {
         battleReport.result.winner = defendingArmy.armyId;
         battleReport.result.reason = attacker.currentManpower <= 0 ? '攻击方兵力耗尽' : '攻击方组织度过低溃退';
         defendingArmy.status = ArmyStatus.DEFENDING; // 防守方胜利后恢复驻扎/防御状态
         attackingArmy.status = ArmyStatus.RETREATING; // 攻击方溃退
-    } else if (defender.currentOrganization <= defenderInitialManpower * ROUT_THRESHOLD || defender.currentManpower <= 0) {
+    } else if (defender.currentOrganization <= defenderInitialManpower * ctx.config.ROUT_THRESHOLD || defender.currentManpower <= 0) {
         battleReport.result.winner = attackingArmy.armyId;
         battleReport.result.reason = defender.currentManpower <= 0 ? '防御方兵力耗尽' : '防御方组织度过低溃退';
         attackingArmy.status = ArmyStatus.OCCUPYING; // 攻击方胜利后可能进入占领状态

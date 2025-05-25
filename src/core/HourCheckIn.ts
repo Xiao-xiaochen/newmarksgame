@@ -1,24 +1,19 @@
-import { Context } from 'koishi';
-import { Region } from '../types';
-import { } from 'koishi-plugin-cron'; // 这行可以移除，因为 cron 是通过 Context 注入的
-// --- 修改：导入新增的函数和 BUILDINGS ---
-import { getBuildingDefinition, BUILDINGS } from './Buildings'; // 确保导入路径正确
-                  import { TRandom } from '../utils/Random'; // 导入 TRandom
-// --- 修改结束 ---
+import { Context, Logger } from 'koishi';
+import { v4 as uuidv4 } from 'uuid';
+import { Region, Army, ArmyStatus, BuildingDefinition } from '../types';
+import { handleArmyArrival } from './Military/ArmyActions';
+import { } from 'koishi-plugin-cron';
+import { getBuildingDefinition, BUILDINGS } from './Buildings';
+import { TRandom } from '../utils/Random';
 
 
 // 假设每小时结算代表一天
-const FOOD_CONSUMPTION_PER_10K_CAPITA = 1; // 每万人每天消耗粮食
-const GOODS_CONSUMPTION_PER_10K_CAPITA = 0.5; // 每万人每天消耗消费品
-const FOOD_CONSUMPTION_PER_CAPITA = FOOD_CONSUMPTION_PER_10K_CAPITA / 10000; // 0.0001
-const GOODS_CONSUMPTION_PER_CAPITA = GOODS_CONSUMPTION_PER_10K_CAPITA / 10000; // 0.00005
 // 定义每座矿场的基础产出率 (石料除外，使用 TRandom)
+// 注意: BASE_MINE_OUTPUT_RATES_PER_MINE 暂时保留在此处，因为它是一个对象，需要更复杂的配置处理
 const BASE_MINE_OUTPUT_RATES_PER_MINE: Record<string, number> = {
     coal: 2000, ironOre: 2000, /* oil: 40, */ rareMetal: 2000, rareEarth: 2000, aluminum: 2000, rubber: 15,
     // oil 由 oilwell 产出, stone 使用 TRandom
 }
-const FARM_OUTPUT_PER_FARM = 3; // 需要确认这个值是否基于有效劳动力
-const LIGHT_INDUSTRY_OUTPUT_PER_INDUSTRY = 1; // 一个满劳动力轻工厂产出1生活消费品
 const RESOURCE_NAMES: Record<string, string> = {
     food: '粮食', goods: '生活消费品', coal: '煤炭', ironOre: '铁矿石', oil: '原油',
     steel: '钢铁', rareMetal: '稀有金属', rareEarth: '稀土', aluminum: '铝', rubber: '橡胶',
@@ -31,6 +26,12 @@ const RESOURCE_NAMES: Record<string, string> = {
 // --- 核心小时结算逻辑 (从原 setInterval 回调中提取) ---
 // --- 导出核心小时结算逻辑 ---
 export async function performHourlyUpdateLogic(ctx: Context) {
+    const FOOD_CONSUMPTION_PER_10K_CAPITA = ctx.config.FOOD_CONSUMPTION_PER_10K_CAPITA;
+    const GOODS_CONSUMPTION_PER_10K_CAPITA = ctx.config.GOODS_CONSUMPTION_PER_10K_CAPITA;
+    const FOOD_CONSUMPTION_PER_CAPITA = FOOD_CONSUMPTION_PER_10K_CAPITA / 10000;
+    const GOODS_CONSUMPTION_PER_CAPITA = GOODS_CONSUMPTION_PER_10K_CAPITA / 10000;
+    const FARM_OUTPUT_PER_FARM = ctx.config.FARM_OUTPUT_PER_FARM;
+    const LIGHT_INDUSTRY_OUTPUT_PER_INDUSTRY = ctx.config.LIGHT_INDUSTRY_OUTPUT_PER_INDUSTRY;
     console.log(`[${new Date().toLocaleString()}] Starting hourly region processing...`);
     const regions = await ctx.database.get('regiondata', {});
     const updatePromises: Promise<any>[] = [];
@@ -240,7 +241,7 @@ export async function performHourlyUpdateLogic(ctx: Context) {
         const armyAttritionUpdates = [];
 
         for (const army of armiesInRegion) {
-            const armyFoodNeeded = army.manpower * 0.01; // 假设每人每小时消耗0.01单位粮食
+            const armyFoodNeeded = army.manpower * 0.0001; // 每人每小时消耗0.0001单位粮食 (即每万人消耗1单位)
             totalArmyFoodConsumption += armyFoodNeeded;
 
             if (currentWarehouse.food >= armyFoodNeeded) {
@@ -404,10 +405,45 @@ export async function performHourlyUpdateLogic(ctx: Context) {
     // --- 10. 等待所有数据库更新完成 ---
     try {
         await Promise.all(updatePromises);
-        console.log(`[${new Date().toLocaleString()}] Hourly region processing finished. Updated ${updatePromises.length} regions.`);
+        // console.log(`[${new Date().toLocaleString()}] Hourly region processing finished. Updated ${updatePromises.length} regions.`);
     } catch (error) {
         console.error(`[${new Date().toLocaleString()}] Error during database updates:`, error);
     }
+
+    // --- 行军兜底机制 ---
+    console.log(`[${new Date().toLocaleString()}] Starting march check-in mechanism.`);
+    try {
+        const allArmies = await ctx.database.get('army', {});
+        const now = Date.now();
+        let armiesToProcess = 0;
+
+        for (const army of allArmies) {
+            if (army.status === ArmyStatus.MARCHING && army.marchEndTime && army.marchEndTime <= now) {
+                armiesToProcess++;
+                console.log(`[行军兜底] 发现军队 ${army.armyId} (${army.name}) 行军已超时，将尝试处理其到达。目标地区: ${army.targetRegionId}`);
+                try {
+                    // 调用 handleArmyArrival 时只传递 ctx 和 armyId
+                    await handleArmyArrival(ctx, army.armyId);
+                    console.log(`[行军兜底] 军队 ${army.armyId} 到达处理成功。`);
+                } catch (arrivalError) {
+                    console.error(`[行军兜底] 处理军队 ${army.armyId} 到达时发生错误:`, arrivalError);
+                    // 可以在这里添加更详细的错误处理，例如更新军队状态为错误状态
+                    await ctx.database.set('army', { armyId: army.armyId }, { status: ArmyStatus.IDLE, statusDescription: '行军兜底处理失败' });
+                }
+            }
+        }
+        if (armiesToProcess > 0) {
+            console.log(`[${new Date().toLocaleString()}] March check-in: Processed ${armiesToProcess} overdue armies.`);
+        } else {
+            console.log(`[${new Date().toLocaleString()}] March check-in: No overdue armies found.`);
+        }
+    } catch (error) {
+        console.error(`[${new Date().toLocaleString()}] Error during march check-in mechanism:`, error);
+    }
+    // --- 行军兜底机制结束 ---
+
+    console.log(`[${new Date().toLocaleString()}] Hourly region processing and march check-in finished. Updated ${updatePromises.length} regions.`);
+
 } // 结束 performHourlyUpdateLogic 函数
 
 // --- 辅助函数 ---

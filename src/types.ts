@@ -317,6 +317,7 @@ export interface Army {
   name: string;   // 军队名称 (例如: 1145第一军)
   commanderId: string; // 指挥官用户ID
   regionId: string; // 当前所在地区ID
+  //ownerGuildId: string; // 新增：军队所属的频道ID，用于 handleArmyArrival
 
   manpower: number; // 兵力数量
   equipment: Partial<Record<keyof userdata['militarywarehouse'], number>>; // 装备及其数量
@@ -324,6 +325,7 @@ export interface Army {
   organization?: number; // <--- 新增：军队总组织度
 
   status: ArmyStatus; // 当前状态 (驻扎, 行军, 战斗)
+  statusDescription?: string; // 新增：状态描述，例如行军兜底处理失败
 
   // 行军相关
   targetRegionId?: string; // 行军目标地区ID

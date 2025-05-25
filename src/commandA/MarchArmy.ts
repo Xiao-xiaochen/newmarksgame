@@ -1,4 +1,4 @@
-import { Context, Session, Time } from 'koishi';
+import { Context, Session, Time, h } from 'koishi';
 import { Region, userdata, Army, ArmyStatus, TerrainType, } from '../types';
 import { findArmyByTarget } from '../utils/ArmyUtils';
 import { INFANTRY_EQUIPMENT_TERRAIN_MODIFIERS } from '../core/equipmentStats';
@@ -181,6 +181,23 @@ export function MarchArmy(ctx: Context) {
 
         const arrivalTimeStr = new Date(marchEndTime).toLocaleString('zh-CN');
         const durationStr = Time.format(marchDurationMinutes * Time.minute);
+
+        // 如果军队规模大于5万，则发送图片
+        if (army.manpower > 50000) {
+          const images = [
+            'file:///E:/Dev/koishi-app/external/newmarksgame/Image/行军3.jpg',
+            'file:///E:/Dev/koishi-app/external/newmarksgame/Image/行军2.jpg',
+            'file:///E:/Dev/koishi-app/external/newmarksgame/Image/行军.jpg',
+          ];
+          const randomImage = images[Math.floor(Math.random() * images.length)];
+          try {
+            await session.send(h.image(randomImage));
+          } catch (imgError) {
+            console.error(`发送行军图片失败: ${randomImage}`, imgError);
+            // 可以选择向用户发送一条错误消息，或者静默失败
+            // session.send('发送行军图片时遇到问题。');
+          }
+        }
 
         return `命令已下达！军队 ${army.name} (${army.armyId}) 已从 ${currentRegionId} 出发，向 ${targetRegionId} (${terrain}) 行军。\n预计用时：${durationStr}\n预计到达时间：${arrivalTimeStr}`;
 

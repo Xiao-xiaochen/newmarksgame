@@ -96,18 +96,20 @@ export function RegionProduce(ctx: Context) {
           }
       }
 
-      // 获取更新后的劳动力（如果存在于 changes 中）
-      const updatedLabor = productionResult.changes.labor ?? region.labor; // 如果没变，用旧值
-      const laborWan = (updatedLabor / 10000).toFixed(2);
-      // 计算消耗的劳动力 = 初始劳动力 - 更新后劳动力
-      const laborConsumed = region.labor - updatedLabor;
+      // 获取更新前的空闲劳动力
+      const initialIdleLabor = region.Busylabor || 0;
+      // 获取更新后的空闲劳动力（如果存在于 changes 中）
+      const updatedIdleLabor = productionResult.changes.Busylabor ?? initialIdleLabor;
+      const idleLaborWan = (updatedIdleLabor / 10000).toFixed(2);
+      // 计算消耗的劳动力 = 初始空闲劳动力 - 更新后空闲劳动力
+      const laborConsumed = initialIdleLabor - updatedIdleLabor;
 
       const reply = [
         "=====[军事工业]=====",
         `${username} 同志：`,
         "■生产成功",
         `■${item}+${productionResult.producedAmount || '未知数量'}`, // 使用返回的实际产量
-        `■空闲劳动力：${laborWan}万 (-${laborConsumed})`, // 显示消耗的劳动力
+        `■空闲劳动力：${idleLaborWan}万 (-${(laborConsumed / 10000).toFixed(2)}万)`, // 显示消耗的劳动力
         "■消耗资源：（吨）",
         resourceText.trim() || "无", // 如果没有消耗，显示无
       ].join("\n");

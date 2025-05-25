@@ -1,8 +1,8 @@
 import { Context, Session } from 'koishi';
 import { Region, userdata, Army } from '../types'; // 导入所需类型
 import { findArmyByTarget } from '../utils/ArmyUtils'; // 导入查找军队的工具函数
-// --- 新增：导入装备配置 ---
 import { INFANTRY_EQUIPMENT_STATS } from '../core/equipmentStats';
+import { format } from '../utils/Format';
 
 const EQUIPMENT_KEY: keyof Region['militarywarehouse'] = 'InfantryEquipment'; // 固定为步兵装备
 const EQUIPMENT_NAME = '枪械'; // 显示名称
@@ -88,8 +88,15 @@ export function DistributeGuns(ctx: Context) {
         });
 
         // --- 修改成功消息，加入组织度信息 ---
-        return `成功为军队 ${army.name} (${army.armyId}) 发放了 ${amount} 件 ${EQUIPMENT_NAME}。\n军队现有 ${EQUIPMENT_NAME}：${updatedArmyEquipmentCount} (总组织度: ${newTotalOrganization})\n地区仓库剩余 ${EQUIPMENT_NAME}：${updatedRegionEquipmentCount}`;
-
+        return `
+====[军事系统]====
+军队名称：${army.name}
+军队编号：${army.armyId}
+军队现有：
+■${EQUIPMENT_NAME}：${format(updatedArmyEquipmentCount)}
+总组织度：${format(newTotalOrganization)}
+仓库剩余：
+■${EQUIPMENT_NAME}：${format(updatedRegionEquipmentCount)}`;
       } catch (error) {
         console.error(`处理发枪命令时出错 (用户: ${userId}, 军队: ${target}, 数量: ${amount}):`, error);
         const errorMessage = (error as Error).message;

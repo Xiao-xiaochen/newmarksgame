@@ -131,19 +131,19 @@ export function produce(
   if (region.mfactory < factoryCount) {
     return { success: false, message: `可用军工厂不足，当前可用：${region.mfactory}，需要分配：${factoryCount}` };
   }
-  // 检查劳动力
+  // 检查劳动力 (使用 Busylabor 即空闲劳动力)
   const totalLaborNeedForAssignedFactories = config.laborCost * factoryCount;
-  if (region.labor < totalLaborNeedForAssignedFactories) {
-    return { success: false, message: `劳动力不足以支撑分配的 ${factoryCount} 个工厂，当前可用：${region.labor}，需要：${totalLaborNeedForAssignedFactories}` };
+  if (region.Busylabor < totalLaborNeedForAssignedFactories) {
+    return { success: false, message: `空闲劳动力不足以支撑分配的 ${factoryCount} 个工厂进行生产，当前空闲：${region.Busylabor}，需要：${totalLaborNeedForAssignedFactories}` };
   }
 
-  // 计算基于分配工厂和所需工厂比例的最大可生产批次 (这里简化为每次最多生产1批)
+  // 计算基于分配工厂和所需工厂比例的最大可生产批次
   const maxBatchesByFactory = Math.floor(factoryCount / config.factoriesRequired);
-  // 计算基于可用劳动力和每批所需劳动力的最大可生产批次
-  const laborPerBatch = config.laborCost * config.factoriesRequired;
-  const maxBatchesByLabor = Math.floor(region.labor / laborPerBatch);
+  // 计算基于可用空闲劳动力和每批所需劳动力的最大可生产批次
+  const laborPerBatch = config.laborCost * config.factoriesRequired; // 这是生产一个完整单位/批次所需的劳动力
+  const maxBatchesByLabor = Math.floor(region.Busylabor / laborPerBatch); // 使用空闲劳动力计算
 
-  // 实际生产批次，受限于工厂、劳动力，且每次最多1批
+  // 实际生产批次，受限于工厂和空闲劳动力
   const actualBatches = Math.min(maxBatchesByFactory, maxBatchesByLabor);
 
   if (actualBatches <= 0) {
@@ -152,7 +152,7 @@ export function produce(
        return { success: false, message: `分配的工厂数量 (${factoryCount}) 不足以生产至少一批 ${itemName} (需要 ${config.factoriesRequired} 个工厂)` };
     }
     if (maxBatchesByLabor < 1) {
-       return { success: false, message: `可用劳动力 (${region.labor}) 不足以生产至少一批 ${itemName} (每批需要 ${laborPerBatch} 劳动力)` };
+       return { success: false, message: `空闲劳动力 (${region.Busylabor}) 不足以生产至少一批 ${itemName} (每批需要 ${laborPerBatch} 劳动力)` };
     }
     return { success: false, message: `未知原因导致无法生产 ${itemName}` }; // 一般不应到达这里
   }
@@ -191,8 +191,8 @@ export function produce(
     const factoriesConsumedInThisProduction = factoryCount; 
 
     const updatedRegionData: Partial<Region> = {
-        labor: currentLabor - laborConsumed,
-        Busylabor: currentBusyLabor + laborConsumed, // 增加繁忙劳动力
+        Busylabor: currentBusyLabor - laborConsumed, // 减少空闲劳动力
+        // labor: currentLabor, // 总劳动力不因生产而改变
         mfactory: currentMFactory - factoriesConsumedInThisProduction, // 减少可用军工厂
         busymfactory: currentBusyMFactory + factoriesConsumedInThisProduction, // 增加繁忙军工厂
         militarywarehouse: {

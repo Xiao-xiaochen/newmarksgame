@@ -1,6 +1,7 @@
 import { Context, Session } from 'koishi';
 import { Region, userdata, Army } from '../types'; // 导入所需类型
 import { findArmyByTarget } from '../utils/ArmyUtils'; // 假设有一个工具函数来查找军队
+import { format } from '../utils/Format';
 
 export function AllocateManpowerToArmy(ctx: Context) {
   ctx.command('分配人力 <target:string> <amount:number>', '为指定军队分配人力（从地区人口和劳动力中抽取）')
@@ -57,17 +58,31 @@ export function AllocateManpowerToArmy(ctx: Context) {
         // 5. 检查地区空闲劳动力、总劳动力和总人口
         const currentPopulation = region.population || 0;
         const currentTotalLabor = region.labor || 0;
-        const currentIdleLabor = region.Busylabor || 0;
+        const currentIdleLabor = region.Busylabor || 0; // Busylabor 代表空闲劳动力
 
-        if (currentIdleLabor < amount) {
-          return `地区 ${regionId} 的空闲劳动力不足 (${currentIdleLabor})，无法分配 ${amount} 人力。`;
+        // 计算已分配给工业的总固定劳动力
+        const laborAllocation = region.laborAllocation || {};
+        const totalAllocatedIndustrialLabor = Object.values(laborAllocation).reduce((sum, count) => sum + (count || 0), 0);
+
+        // 计算真正可用于征兵的劳动力数量
+        // 这部分劳动力必须是：1. 当前空闲的；2. 并且征召后，剩余总劳动力仍能覆盖所有固定工业分配
+        const laborPoolAfterCoveringFixedAllocations = Math.max(0, currentTotalLabor - totalAllocatedIndustrialLabor);
+        const trulyAvailableForConscription = Math.min(currentIdleLabor, laborPoolAfterCoveringFixedAllocations);
+
+        if (amount > currentPopulation) {
+          return `地区 ${regionId} 的总人口 (${currentPopulation}) 不足，无法征召 ${amount} 人力。`;
         }
-        if (currentTotalLabor < amount) {
-          // 理论上 currentIdleLabor <= currentTotalLabor，此检查可能冗余，但为保险起见保留
-          return `地区 ${regionId} 的总劳动力不足 (${currentTotalLabor})，无法分配 ${amount} 人力。`;
-        }
-        if (currentPopulation < amount) {
-          return `地区 ${regionId} 的总人口不足 (${currentPopulation})，无法分配 ${amount} 人力。`;
+
+        if (amount > trulyAvailableForConscription) {
+          let failReason = '';
+          if (currentIdleLabor < amount && currentIdleLabor <= trulyAvailableForConscription) { // currentIdleLabor is the bottleneck
+            failReason = `当前空闲劳动力仅为 ${currentIdleLabor}。`;
+          } else if (laborPoolAfterCoveringFixedAllocations < amount && laborPoolAfterCoveringFixedAllocations < currentIdleLabor) { // total labor vs fixed allocations is the bottleneck
+            failReason = `为维持现有工业分配(已分配 ${totalAllocatedIndustrialLabor})，总劳动力(${currentTotalLabor})中最多只能再抽调 ${laborPoolAfterCoveringFixedAllocations} 用于征兵。`;
+          } else { // Generic message if specific bottleneck isn't clear or both contribute
+            failReason = `综合考虑空闲劳动力(${currentIdleLabor})及维持工业固定分配(需 ${totalAllocatedIndustrialLabor} /总共 ${currentTotalLabor})后，最多可征召 ${trulyAvailableForConscription}。`;
+          }
+          return `无法从地区 ${regionId} 征召 ${amount} 人力。原因：${failReason}`;
         }
 
         // 6. 执行分配
