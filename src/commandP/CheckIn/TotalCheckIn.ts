@@ -81,13 +81,17 @@ export function CheckIn(ctx: Context) {
           const formalLabor = (newUser.Labor / 10000).toFixed(2);
 
           return `
+欢迎游玩征战文游！
+
 ====[征战文游]====
 ${username} 同志！
 □初始状态:
-■ 人口：${formalPopulation}万 (劳动力 ${formalLabor}万)
+■ 人口：${formalPopulation}万
 ■ 基础设施：${newUser.base}/${newUser.maxbase}
 ■ 建筑部门：${newUser.Department}
-■ 仓库-粮食：${newUser.warehouse.food} / ${newUser.warehouseCapacity}
+■ 粮食：${newUser.warehouse.food} / ${newUser.warehouseCapacity}
+
+输入‘help’查看指令表
 `.trim();
         } else {
           // --- 处理已注册用户的签到/阅读报告 ---
@@ -128,7 +132,7 @@ ${username} 同志！
 ${username} 同志！
 每日报告已阅，获得物资：
 ■ 人口：+${populationIncrease}
-■ 仓库-粮食：+${foodIncrease}
+■ 粮食：+${foodIncrease}
 `.trim();
           }
         }

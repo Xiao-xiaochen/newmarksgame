@@ -8,7 +8,7 @@ import { setupDailyReset } from "./core/DayCheckIn"; // 注意：原为 CheckIn.
 import { UserReset } from './core/Administrator/UserReset';
 import { CountryReset } from './core/Administrator/CountryReset'; // <--- 导入新命令
 import { ManualCheckIn } from './commandP/ManualCheckIn'; // <--- 导入手动重置指令
-import { HelpCommand } from './help'; // <--- 导入帮助指令
+import { HelpCommand } from './Help'; // <--- 导入帮助指令
 // --- 地图相关 ---
 import { InitializeRegions } from './core/Map/Command/InitializeRegions';
 import { WorldMapImport } from './core/Map/Command/WorldMapImport';
@@ -70,7 +70,9 @@ import { ExitCountry } from './commandC/ExitCountry'; // <--- 退出国家指令
 import { Dismisscountry } from './commandC/Dismisscountry'; // <--- 解散国家指令
 import { ChangenName} from './commandC/ChangenName'; // <--- 国家改名指令
 import { ForceChangenName } from "./core/Administrator/ForceChangenName";
- import { ManufactureCommand } from './commandR/Manufacture';
+import { ManufactureCommand } from './commandR/Manufacture';
+
+//import { SoilderNumber } from './commandC/GeneralInfo/SoilderNumber'; // <--- 导入士兵数量指令
 
 export const inject = {
   required: ['database', 'puppeteer', 'cron']
@@ -147,6 +149,7 @@ export function apply(ctx: Context) {
     // ProduceTank(ctx)
     // ProduceInfantryEquipment(ctx)
     ManufactureCommand(ctx);
+    //SoilderNumber(ctx);
 }
 
 //

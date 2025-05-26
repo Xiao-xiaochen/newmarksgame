@@ -35,11 +35,11 @@ export function FormArmy(ctx: Context) {
           return `当前群聊 (${guildId}) 未绑定任何地区。`;
         }
         const region: Region = regionDataResult[0];
-        const regionId = region.RegionId;
+        const originRegionId = region.RegionId; // 这是新军队的“出生地区ID”
 
         // 3. 检查权限和归属
         if (!user.countryName || user.countryName !== region.owner) {
-          return `您 (${user.countryName || '无国家'}) 不属于控制该地区 (${regionId}) 的国家 (${region.owner || '无主地'})，无法在此组建军队。`;
+          return `您 (${user.countryName || '无国家'}) 不属于控制该地区 (${originRegionId}) 的国家 (${region.owner || '无主地'})，无法在此组建军队。`;
         }
         const countrylearder = await ctx.database.get('userdata', { userId: region.leader });
         if ( user.isLeader !== true ) {
@@ -47,9 +47,11 @@ export function FormArmy(ctx: Context) {
         }
 
         // 4. 检查军队数量限制
-        const existingArmies = await ctx.database.get('army', { regionId: regionId });
-        if (existingArmies.length >= ctx.config.MaxArmiesPerRegion) {
-          return `地区 ${regionId} 的军队数量已达上限 (${ctx.config.MaxArmiesPerRegion}支)。`;
+        // 首先，检查以此地为“出生地”的军队总数是否已达上限
+        // 使用正则表达式进行前缀匹配: ^ 表示字符串的开始
+        const allArmiesFromThisOrigin = await ctx.database.get('army', { armyId: new RegExp(`^${originRegionId}`) });
+        if (allArmiesFromThisOrigin.length >= ctx.config.MaxArmiesPerRegion) {
+          return `以地区 ${originRegionId} 为初始地的军队数量已达上限 (${ctx.config.MaxArmiesPerRegion}支)。`;
         }
 
         // 5. 生成新的军队ID和名称，并处理可能的并发冲突
@@ -62,22 +64,22 @@ export function FormArmy(ctx: Context) {
         while (!armyCreated && attempts < MAX_CREATION_ATTEMPTS) {
             attempts++;
 
-            // 在每次尝试前重新获取当前地区的军队，以获取最新状态应对并发
-            const currentArmiesInRegion = await ctx.database.get('army', { regionId: regionId });
-            if (currentArmiesInRegion.length >= ctx.config.MaxArmiesPerRegion) {
-                // 如果在第一次尝试时就满了，直接返回
-                // 如果是重试时发现满了，说明在并发情况下其他请求成功创建了军队
-                return `地区 ${regionId} 的军队数量已达上限 (${ctx.config.MaxArmiesPerRegion}支)。`;
+            // 在每次尝试前重新获取所有以此地为“出生地”的军队，以获取最新状态应对并发
+            // 使用正则表达式进行前缀匹配: ^ 表示字符串的开始
+            const currentArmiesWithSameOrigin = await ctx.database.get('army', { armyId: new RegExp(`^${originRegionId}`) });
+            
+            // 再次检查上限，因为并发情况下其他请求可能已创建军队
+            if (currentArmiesWithSameOrigin.length >= ctx.config.MaxArmiesPerRegion) {
+                return `以地区 ${originRegionId} 为初始地的军队数量已达上限 (${ctx.config.MaxArmiesPerRegion}支)。`;
             }
 
             let nextArmyIndex = 1;
             const existingIndices = new Set<number>();
-            for (const army of currentArmiesInRegion) {
-                if (army.armyId.startsWith(regionId)) {
-                    // 提取地区ID后的数字序号
-                    const indexStr = army.armyId.substring(regionId.length);
+            for (const army of currentArmiesWithSameOrigin) {
+                if (army.armyId.startsWith(originRegionId)) { // 这里 .startsWith() 是字符串方法，用于逻辑判断，是正确的
+                    const indexStr = army.armyId.substring(originRegionId.length);
                     const index = parseInt(indexStr);
-                    if (!isNaN(index) && index > 0) { // 确保是有效的正整数序号
+                    if (!isNaN(index) && index > 0) {
                         existingIndices.add(index);
                     }
                 }
@@ -88,26 +90,23 @@ export function FormArmy(ctx: Context) {
             }
 
             // 安全检查，防止 nextArmyIndex 超出合理范围
-            if (nextArmyIndex > ctx.config.MaxArmiesPerRegion && currentArmiesInRegion.length >= ctx.config.MaxArmiesPerRegion) {
-                // 如果计算出的下一个序号大于最大允许军队数，并且当前军队数已经达到上限，则确实无法创建
-                // (这里额外加一个判断，因为如果军队未满，理论上总能找到一个可用的小于等于MaxArmiesPerRegion的序号)
-                console.warn(`[FormArmy] Region ${regionId} is full or next index ${nextArmyIndex} exceeds max ${ctx.config.MaxArmiesPerRegion}. Army count: ${currentArmiesInRegion.length}.`);
-                return `地区 ${regionId} 的军队数量已达上限 (${ctx.config.MaxArmiesPerRegion}支) 或无法找到可用编号。`;
-            } else if (nextArmyIndex > 9999 && ctx.config.MaxArmiesPerRegion > 9999) {
-                // 增加一个序号上限，防止无限增长, 假设军队序号不超过4位数
-                // 如果MaxArmiesPerRegion本身就很大，这个限制可能需要调整
-                console.warn(`[FormArmy] Calculated nextArmyIndex ${nextArmyIndex} for region ${regionId} is too large.`);
-                return `无法为地区 ${regionId} 的新军队找到合适的编号（序号过大）。`;
+            // 这里的 MaxArmiesPerRegion 应该是指每个“出生地区”能产生的最大军队数
+            if (nextArmyIndex > ctx.config.MaxArmiesPerRegion && currentArmiesWithSameOrigin.length >= ctx.config.MaxArmiesPerRegion) {
+                console.warn(`[FormArmy] Origin Region ${originRegionId} is full or next index ${nextArmyIndex} exceeds max ${ctx.config.MaxArmiesPerRegion}. Army count: ${currentArmiesWithSameOrigin.length}.`);
+                return `以地区 ${originRegionId} 为初始地的军队数量已达上限 (${ctx.config.MaxArmiesPerRegion}支) 或无法找到可用编号。`;
+            } else if (nextArmyIndex > 9999 && ctx.config.MaxArmiesPerRegion > 9999) { // 假设序号最大4位，除非配置允许更大
+                console.warn(`[FormArmy] Calculated nextArmyIndex ${nextArmyIndex} for origin region ${originRegionId} is too large.`);
+                return `无法为地区 ${originRegionId} 的新军队找到合适的编号（序号过大）。`;
             }
 
-            newArmyId = `${regionId}${nextArmyIndex}`;
-            newArmyName = `${regionId}第${nextArmyIndex}军`;
+            newArmyId = `${originRegionId}${nextArmyIndex}`;
+            newArmyName = `${originRegionId}第${nextArmyIndex}军`;
 
             const newArmy: Army = {
               armyId: newArmyId,
               name: newArmyName,
               commanderId: userId,
-              regionId: regionId,
+              regionId: originRegionId, 
               manpower: ctx.config.InitialArmyManPower,
               equipment: {},
               foodSupply: ctx.config.InitialArmyFood,
@@ -124,14 +123,11 @@ export function FormArmy(ctx: Context) {
             } catch (dbError) {
                 if (dbError.message.includes('UNIQUE constraint failed')) {
                     if (attempts >= MAX_CREATION_ATTEMPTS) {
-                        console.error(`Failed to create army in region ${regionId} for user ${userId} after ${MAX_CREATION_ATTEMPTS} attempts due to ID collision with ID ${newArmyId}.`);
-                        // 当达到最大尝试次数后，仍然冲突，则返回错误给用户
+                        console.error(`Failed to create army for origin region ${originRegionId} for user ${userId} after ${MAX_CREATION_ATTEMPTS} attempts due to ID collision with ID ${newArmyId}.`);
                         return `创建军队时ID (${newArmyId}) 持续冲突，请稍后再试或联系管理员。`;
                     }
-                    // 发生ID冲突，记录警告，外层while循环将进行下一次尝试
-                    console.warn(`Army ID ${newArmyId} collision on attempt ${attempts} for region ${regionId}. Retrying.`);
+                    console.warn(`Army ID ${newArmyId} collision on attempt ${attempts} for origin region ${originRegionId}. Retrying.`);
                 } else {
-                    // 如果是其他类型的数据库错误，则直接抛出，由后续的catch块处理
                     throw dbError;
                 }
             }

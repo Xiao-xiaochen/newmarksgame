@@ -216,10 +216,7 @@ ${username} 同志！
           // 如果没有分配到地区，提示信息需要更明确
           successMessage += `\n□未能自动分配初始地区（可能是没有满足条件的位置），请联系管理员或稍后再试。`;
         }
-        successMessage += `
-\n■邀请格式：\n邀请加入国家 @指定玩家
-`.trim()
-
+        successMessage += `\n■邀请格式：\n邀请加入国家 @指定玩家`.trim()
         return successMessage;
       } catch (error) {
         console.error('组建国家时出错:', error)
